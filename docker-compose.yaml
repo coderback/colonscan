@@ -1,0 +1,106 @@
+# docker-compose.yml
+services:
+  db:
+    image: postgres:latest
+    container_name: iPostgresDB
+    build: ./db
+    volumes:
+      - ./db/postgres_config/pg_hba.conf:/postgres_config/pg_hba.conf
+      - ./db/postgres_config/pg_ident.conf:/postgres_config/pg_ident.conf
+      - ./db/postgres_config/postgresql.conf:/postgres_config/postgresql.conf
+      - ./db/backups/backup.sql:/backups/backup.sql
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: colonscan_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: admin
+    ports:
+      - "5432:5432"
+
+  backend:
+    image: django:latest
+    container_name: iDjango_Backend
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - ./media:/app/media
+    command: gunicorn colonscan.wsgi:application --bind 0.0.0.0:8000
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_NAME=colonscan_db
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=admin
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+
+  frontend:
+    image: nextjs:latest
+    container_name: iReact_Frontend
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  redis:
+    image: redis:8.0-rc1-alpine
+    container_name: iRedis
+    ports:
+      - "6379:6379"
+
+  celery-worker:
+    image: django:latest
+    container_name: iCelery
+    build: ./backend
+    command: celery -A colonscan worker --loglevel=info
+    volumes:
+      - ./backend:/app
+      - ./media:/app/media
+    depends_on:
+      - backend
+      - redis
+    environment:
+      - DATABASE_NAME=colonscan_db
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=admin
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+
+# Histopath slide inference (FastAPI + Torch/TensorFlow)
+  slide-service:
+    build: ./slide_service
+    image: colonscan/slide-service:latest
+    # if you have GPUs, use the nvidia runtime
+    runtime: nvidia
+    ports:
+      - "8001:8001"
+    environment:
+      MODEL_PATH: /models/your_slide_model.pt
+
+  # Polyp detection service (YOLOv5 as FastAPI)
+  video-service:
+    build: ./video_service
+    image: colonscan/video-service:latest
+    runtime: nvidia
+    ports:
+      - "8002:8002"
+    environment:
+      MODEL_PATH: /models/yolov5s.pt
+
+  # Genomic pipeline runner (Nextflow or Flask wrapper)
+  genomic-service:
+    build: ./genomic_service
+    image: colonscan/genomic-service:latest
+    ports:
+      - "8003:8003"
+    environment:
+      WORKFLOW_DIR: /workflows
+
+volumes:
+  postgres_data:
