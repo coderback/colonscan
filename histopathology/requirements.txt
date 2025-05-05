@@ -1,0 +1,9 @@
+fastapi==0.115.12
+uvicorn==0.34.2
+pillow==11.2.1
+torch==2.7.0
+torchvision==0.22.0
+pillow==11.2.1
+shap==0.47.2
+captum==0.8.0
+opencv-python==4.11.0.86
