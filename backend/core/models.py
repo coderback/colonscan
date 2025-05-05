@@ -34,6 +34,10 @@ class Slide(models.Model):
     job        = models.OneToOneField(AnalysisJob, null=True, blank=True, on_delete=models.SET_NULL)
     # pointers to result artifacts (e.g. heatmaps)
     result_file = models.FileField(upload_to='slide_results/', null=True, blank=True)
+    classification = models.CharField(max_length=50, blank=True, null=True)
+    saliency_file = models.FileField(upload_to='slide_saliency/', null=True, blank=True)
+    gradcam_file = models.FileField(upload_to='slide_gradcam/', null=True, blank=True)
+    shap_file = models.FileField(upload_to='slide_shap/', null=True, blank=True)
 
 
 class VideoSession(models.Model):
@@ -60,3 +64,4 @@ class GenomicSample(models.Model):
     job          = models.OneToOneField(AnalysisJob, null=True, blank=True, on_delete=models.SET_NULL)
     vcf_file     = models.FileField(upload_to='genomic_results/', null=True, blank=True)
     metrics      = models.JSONField(null=True, blank=True, help_text="Parsed variant counts, VAFs, etc.")
+

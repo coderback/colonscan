@@ -18,6 +18,7 @@ from django.contrib import admin
 from core.views import health_check
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from rest_framework.authtoken import views as drf_views
 from core.views import (
     SlideViewSet,
     VideoSessionViewSet,
@@ -36,6 +37,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check),
     path('api/', include(router.urls)),
+    path('api/auth/login/', drf_views.obtain_auth_token, name='api_token_auth'),
 ]
-
-
