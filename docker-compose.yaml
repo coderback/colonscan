@@ -38,14 +38,28 @@ services:
       - DATABASE_PORT=5432
 
   frontend:
-    image: nextjs:latest
+    image: node:22.15.0-alpine
     container_name: iReact_Frontend
     build: ./frontend
-    volumes:
-      - ./frontend:/app
     ports:
-      - "3000:80"
+      - "3000:3000"
     depends_on:
+      - backend
+    environment:
+      NODE_ENV: development
+    command: npm run dev
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: iNginx_Proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - frontend
       - backend
 
   redis:
@@ -73,34 +87,37 @@ services:
       - DATABASE_PORT=5432
 
 # Histopath slide inference (FastAPI + Torch/TensorFlow)
-  slide-service:
-    build: ./slide_service
-    image: colonscan/slide-service:latest
+  histopathology:
+    build: ./histopathology
+    container_name: iHistopathology
+    image: colonscan/histopathology:latest
     # if you have GPUs, use the nvidia runtime
     runtime: nvidia
     ports:
       - "8001:8001"
-    environment:
-      MODEL_PATH: /models/your_slide_model.pt
+    volumes:
+      - ./histopathology/models:/models:ro
 
   # Polyp detection service (YOLOv5 as FastAPI)
-  video-service:
-    build: ./video_service
-    image: colonscan/video-service:latest
+  colonoscopy:
+    build: ./colonoscopy
+    container_name: iColonoscopy
+    image: colonscan/colonoscopy:latest
     runtime: nvidia
     ports:
       - "8002:8002"
-    environment:
-      MODEL_PATH: /models/yolov5s.pt
+    volumes:
+      - ./colonoscopy/models:/models:ro
 
   # Genomic pipeline runner (Nextflow or Flask wrapper)
-  genomic-service:
-    build: ./genomic_service
-    image: colonscan/genomic-service:latest
+  genomic-profiling:
+    build: ./genomic_profiling
+    container_name: iGenomic-Profiling
+    image: colonscan/genomic-profiling:latest
     ports:
       - "8003:8003"
-    environment:
-      WORKFLOW_DIR: /workflows
+    volumes:
+      - ./genomic-profiling/models:/models:ro
 
 volumes:
   postgres_data:
