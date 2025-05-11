@@ -98,7 +98,7 @@ services:
     volumes:
       - ./histopathology/models:/models:ro
 
-  # Polyp detection service (YOLOv5 as FastAPI)
+  # Polyp detection service
   colonoscopy:
     build: ./colonoscopy
     container_name: iColonoscopy
@@ -108,16 +108,6 @@ services:
       - "8002:8002"
     volumes:
       - ./colonoscopy/models:/models:ro
-
-  # Genomic pipeline runner (Nextflow or Flask wrapper)
-  genomic-profiling:
-    build: ./genomic_profiling
-    container_name: iGenomic-Profiling
-    image: colonscan/genomic-profiling:latest
-    ports:
-      - "8003:8003"
-    volumes:
-      - ./genomic-profiling/models:/models:ro
 
 volumes:
   postgres_data:

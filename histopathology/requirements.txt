@@ -7,3 +7,4 @@ pillow==11.2.1
 shap==0.47.2
 captum==0.8.0
 opencv-python==4.11.0.86
+monai==1.4.0
