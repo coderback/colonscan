@@ -64,7 +64,7 @@ def analyze_patch(patch_id):
 
     try:
         with open(patch.image.path, "rb") as f:
-            files = {"file": (patch.image.name, f, "image/png")}
+            files = [("files", (patch.image.name, f,  f"image/{patch.image.name.split('.')[-1]}"))]
             params = {"patch_size": 224}
             resp = requests.post(PATCH_URL, files=files, params=params)
         resp.raise_for_status()
