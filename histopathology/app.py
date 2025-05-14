@@ -1,74 +1,60 @@
-# histopathology/app.py
-import base64
-from io import BytesIO
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+import io
 from PIL import Image
-import torch
-import torchvision.transforms as T
 
-# --- import your MONAI/ResNet50 utilities ---
 from xai import (
-    get_model,
-    class_to_idx,
-    compute_saliency_map,
+    CLASSES,
+    load_model,
+    get_patch_transforms,
+    to_base64,
+    infer_wsi,
     compute_gradcam_map,
-    compute_shap_map,
+    compute_saliency_map
 )
 
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+app = FastAPI(title="ColonoScan Histopathology Service")
 
-# load model & weights
-model = get_model(num_classes=len(class_to_idx))
-model.load_state_dict(torch.load("/models/slide_model.pth", map_location=DEVICE))
-model.to(DEVICE).eval()
 
-# same transforms you used in training
-transform = T.Compose([
-    T.Resize((224,224)),
-    T.ToTensor(),
-    T.Normalize([0.485,0.456,0.406],[0.229,0.224,0.225])
-])
-
-app = FastAPI()
-
-class InferRequest(BaseModel):
-    path: str
-
-class InferResponse(BaseModel):
+class PatchResponse(BaseModel):
     classification: str
-    saliency: str   # base64‐PNG
-    gradcam: str
-    shap: str
+    confidence: float
+    saliency: str  # base64 PNG
+    gradcam: str  # base64 PNG
 
-def pil_to_b64(img: Image.Image) -> str:
-    buf = BytesIO()
-    img.save(buf, format="PNG")
-    return base64.b64encode(buf.getvalue()).decode()
 
-@app.post("/infer", response_model=InferResponse)
-async def infer(req: InferRequest):
+@app.post("/infer/patch", response_model=PatchResponse)
+async def infer_patch(file: UploadFile = File(...), patch_size: int = 224):
+    contents = await file.read()
+    img = Image.open(io.BytesIO(contents)).convert("RGB")
+
+    model = load_model()
+    tf = get_patch_transforms(patch_size)
+    data = tf({"image": np.array(img)})
+    inp = data["image"].unsqueeze(0).to(load_model().device)
+    inp.requires_grad = True
+
+    logits = model(inp)
+    probs = F.softmax(logits, dim=1)[0]
+    idx = int(torch.argmax(probs).item())
+    label = CLASSES[idx]
+    conf = float(probs[idx].item())
+
+    sal_img = compute_saliency_map(img, idx, patch_size)
+    cam_img = compute_gradcam_map(img, idx, patch_size)
+
+    return PatchResponse(
+        classification=label,
+        confidence=conf,
+        saliency=to_base64(sal_img),
+        gradcam=to_base64(cam_img),
+    )
+
+
+@app.post("/infer/wsi")
+async def infer_wsi_endpoint(path: str, patch_size: int = 224, overlap: float = 0.5):
     try:
-        img = Image.open(req.path).convert("RGB")
-        x = transform(img).unsqueeze(0).to(DEVICE)
-
-        # classification
-        with torch.no_grad():
-            logits = model(x)
-            probs = torch.nn.functional.softmax(logits, dim=1)
-            pred = torch.argmax(probs, dim=1).item()
-        label = {v:k for k,v in class_to_idx.items()}[pred]
-
-        # four maps
-        sal = compute_saliency_map(model, x, pred)    # returns PIL.Image
-        cam = compute_gradcam_map(model, x, pred)
-        shp = compute_shap_map(model, x, pred)
-
-        return {
-            "classification": label,
-            "saliency": pil_to_b64(sal),
-            "gradcam": pil_to_b64(cam),
-            "shap": pil_to_b64(shp),
-        }
+        return JSONResponse({"result": infer_wsi(path, patch_size, overlap)})
     except Exception as e:
-        raise HTTPException(500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
