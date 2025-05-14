@@ -15,7 +15,7 @@ from monai.data import WSIReader, SlidingPatchWSIDataset, list_data_collate
 # ---- Configuration ----
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 CLASSES = ["benign", "malignant"]
-MODEL_PATH = "models/patch_model.pth"
+MODEL_PATH = "models/slide_model.pth"
 
 # ---- Model loading ----
 def load_model():
