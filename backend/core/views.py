@@ -47,10 +47,14 @@ class PatchViewSet(viewsets.ModelViewSet):
         return Patch.objects.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
-        patch = serializer.save(owner=self.request.user)
+        # 1) create the job
         job = AnalysisJob.objects.create()
-        patch.job = job
-        patch.save()
+
+        # 2) pass job into serializer.save() so that
+        #    Patch.objects.create(..., job=job) never inserts NULL
+        patch = serializer.save(owner=self.request.user, job=job)
+
+        # 3) kick off your async task
         from .tasks import analyze_patch
         analyze_patch.delay(patch.id)
 

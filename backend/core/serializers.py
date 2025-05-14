@@ -59,26 +59,25 @@ class PatchSerializer(serializers.ModelSerializer):
         model = Patch
         fields = [
             "id",
-            "slide",
-            "x", "y",
+            "image",
             "predicted_class",
             "class_name",
             "probabilities",
             "gradcam_url",
             "saliency_url",
-            "created_at",
+            "created",
         ]
 
     def get_gradcam_url(self, obj):
         request = self.context.get("request")
-        if obj.gradcam_map:
-            return request.build_absolute_uri(obj.gradcam_map.url)
+        if obj.gradcam_file:
+            return request.build_absolute_uri(obj.gradcam_file.url)
         return None
 
     def get_saliency_url(self, obj):
         request = self.context.get("request")
-        if obj.saliency_map:
-            return request.build_absolute_uri(obj.saliency_map.url)
+        if obj.saliency_file:
+            return request.build_absolute_uri(obj.saliency_file.url)
         return None
 
 
