@@ -1,63 +1,115 @@
-import base64
+import base64, tempfile
 import requests
 from io import BytesIO
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from celery import shared_task
-from .models import Slide, VideoSession, GenomicSample, AnalysisJob
+from .models import Slide, Patch, VideoSession, GenomicSample, AnalysisJob
 
-SLIDE_URL   = 'http://histopathology:8001/infer'
-VIDEO_URL   = 'http://colonoscopy:8002/detect'
+SLIDE_URL = 'http://histopathology:8001/infer/slide'
+PATCH_URL = "http://histopathology:8001/infer/patch"
+VIDEO_URL = 'http://colonoscopy:8002/detect'
 GENOMIC_URL = 'http://genomic:8003/run'
+
 
 @shared_task
 def analyze_slide(slide_id):
     slide = Slide.objects.get(pk=slide_id)
-    job   = slide.job
-    job.status     = AnalysisJob.RUNNING
+    job = slide.job
+    job.status = AnalysisJob.RUNNING
     job.started_at = timezone.now()
     job.save()
 
     try:
-        resp = requests.post(SLIDE_URL, json={'path': slide.slide_file.path})
+        # stream-slide file
+        with open(slide.slide_file.path, "rb") as f:
+            files = {"file": (slide.slide_file.name, f, "application/octet-stream")}
+            params = {"patch_size": 224, "overlap": 0.5}
+            resp = requests.post(SLIDE_URL, files=files, params=params)
         resp.raise_for_status()
         data = resp.json()
 
-        # classification
-        slide.classification = data['classification']
+        # summary text from your FastAPI
+        slide.summary = data["summary"]
 
-        # helper to decode and save each map
-        def save_map(key, field, prefix):
-            img_bytes = base64.b64decode(data[key])
-            buf = ContentFile(img_bytes)
-            setattr(
-                slide,
-                field,
-                buf
+        # optional: decode an overview heatmap if you returned one
+        if "overview_map" in data:
+            b64 = data["overview_map"]
+            img_bytes = base64.b64decode(b64)
+            slide.overview_map.save(
+                f"{slide_id}_overview.png",
+                ContentFile(img_bytes),
+                save=False
             )
-            # Django needs the name on save()
-            getattr(slide, field).save(f"{prefix}_{slide_id}.png", buf, save=False)
-
-        save_map('saliency', 'saliency_file', 'saliency')
-        save_map('gradcam',  'gradcam_file',  'gradcam')
-        save_map('shap',     'shap_file',     'shap')
 
         slide.save()
         job.status = AnalysisJob.COMPLETED
 
-    except Exception as e:
+    except Exception as exc:
         job.status = AnalysisJob.FAILED
-        job.log    = str(e)
+        job.log = str(exc)
 
     finally:
         job.finished_at = timezone.now()
         job.save()
 
+
+@shared_task
+def analyze_patch(patch_id):
+    patch = Patch.objects.get(pk=patch_id)
+    job = patch.job
+    job.status = AnalysisJob.RUNNING
+    job.started_at = timezone.now()
+    job.save()
+
+    try:
+        with open(patch.image.path, "rb") as f:
+            files = {"file": (patch.image.name, f, "image/png")}
+            params = {"patch_size": 224}
+            resp = requests.post(PATCH_URL, files=files, params=params)
+        resp.raise_for_status()
+        data = resp.json()
+
+        # Populate patch record
+        patch.predicted_class = data["predicted_class"]
+        patch.class_name = data["class_name"]
+        patch.probabilities = data["probabilities"]
+
+        # decode & save gradcam
+        gradcam_b64 = data["gradcam"]
+        gradcam_bytes = base64.b64decode(gradcam_b64)
+        patch.gradcam_file.save(
+            f"{patch_id}_gradcam.png",
+            ContentFile(gradcam_bytes),
+            save=False
+        )
+
+        # decode & save saliency
+        sal_b64 = data["saliency"]
+        sal_bytes = base64.b64decode(sal_b64)
+        patch.saliency_file.save(
+            f"{patch_id}_saliency.png",
+            ContentFile(sal_bytes),
+            save=False
+        )
+
+        patch.save()
+        job.status = AnalysisJob.COMPLETED
+
+    except Exception as exc:
+        job.status = AnalysisJob.FAILED
+        job.log = str(exc)
+
+    finally:
+        job.finished_at = timezone.now()
+        job.save()
+
+
 @shared_task
 def analyze_genomic(sample_id):
     sample = GenomicSample.objects.get(pk=sample_id)
-    job    = sample.job
-    job.status     = AnalysisJob.RUNNING
+    job = sample.job
+    job.status = AnalysisJob.RUNNING
     job.started_at = timezone.now()
     job.save()
 
@@ -67,7 +119,7 @@ def analyze_genomic(sample_id):
         resp.raise_for_status()
         result = resp.json()
         vcf_path = result['vcf_path']
-        metrics  = result['metrics']
+        metrics = result['metrics']
 
         # read & save VCF
         with open(vcf_path, 'rb') as f:
@@ -82,7 +134,7 @@ def analyze_genomic(sample_id):
 
     except Exception as e:
         job.status = AnalysisJob.FAILED
-        job.log    = str(e)
+        job.log = str(e)
 
     finally:
         job.finished_at = timezone.now()

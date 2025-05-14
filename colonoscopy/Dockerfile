@@ -1,29 +1,18 @@
-FROM python:3.13.2-slim-bullseye
+FROM pytorch/pytorch:2.7.0-cuda12.6-cudnn9-runtime
+
 WORKDIR /app
 
-# 1) Install system build deps (needed for NumPy, OpenCV, etc.)
+# Install any OS-level deps you still need
 RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      build-essential \
-      gcc \
-      python3-dev \
-      libgl1 \
+ && apt-get install -y --no-install-recommends libgl1 \
  && rm -rf /var/lib/apt/lists/*
 
-# 2) Install NumPy first
-COPY requirements.txt ./
-RUN pip install --no-cache-dir numpy
-
-# 3) Install the rest of your requirements
+# Install the rest of your Python deps
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 4) (Optional) purge build tools to slim the image
-RUN apt-get purge -y --auto-remove \
-      build-essential \
-      gcc \
-      python3-dev \
- && rm -rf /var/lib/apt/lists/*
-
-# 5) Copy your app and set the startup command
+# Copy your app
 COPY . .
+
+EXPOSE 8001
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8002"]

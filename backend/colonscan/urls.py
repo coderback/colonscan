@@ -21,6 +21,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken import views as drf_views
 from core.views import (
     SlideViewSet,
+    PatchViewSet,
     VideoSessionViewSet,
     GenomicSampleViewSet,
     AnalysisJobViewSet,
@@ -29,6 +30,7 @@ from core.views import (
 
 router = DefaultRouter()
 router.register(r'slides', SlideViewSet, basename='slide')
+router.register(r"patches", PatchViewSet, basename="patch")
 router.register(r'videos', VideoSessionViewSet, basename='video')
 router.register(r'genomic', GenomicSampleViewSet, basename='genomic')
 router.register(r'jobs', AnalysisJobViewSet, basename='job')
