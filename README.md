@@ -1,12 +1,13 @@
 # ColonoScan
 
-An end-to-end, containerized platform for automated analysis of colonoscopy data: histopathology slides, colonoscopy videos, and genomic samples. Built with a Django REST backend, Next.js frontend, and specialized microservices for deep-learning inference (FastAPI + PyTorch/TensorFlow + YOLOv5) and genomic pipeline execution (Nextflow or Flask).
+An end-to-end, containerized platform for automated analysis of colonoscopy data: histopathology slides, colonoscopy videos. Built with a Django REST backend, Next.js frontend, and specialized microservices for deep-learning inference (FastAPI + PyTorch).
 
 ---
 
 ## Table of Contents
 
-- [Features](#features)  
+- [Prototype] (#prototype)
+- [Features](#features)
 - [Architecture](#architecture)  
 - [Prerequisites](#prerequisites)  
 - [Getting Started](#getting-started)  
@@ -22,6 +23,68 @@ An end-to-end, containerized platform for automated analysis of colonoscopy data
 - [License](#license)  
 
 ---
+# Prototype
+
+The prototype is an interactive Gradio applications demonstrating real-time inference and visual explainability for colonoscopy data analysis. Each app highlights different functionalities provided by ColonoScan's AI-driven analytical pipeline.
+
+## Gradio Apps
+
+### Live Polyp Segmentation
+- **Purpose**: Real-time frame-by-frame polyp segmentation from uploaded colonoscopy videos.
+- **Model**: EfficientNet-b4-based UnetPlusPlus.
+- **Features**: Real-time segmentation overlay directly on video frames without requiring external video processing tools.
+- **Usage**: Upload an MP4 video through the provided interface to view live segmentation results.
+
+### Video Polyp Segmentation
+- **Purpose**: Batch processing of colonoscopy videos with segmented outputs.
+- **Model**: EfficientNet-b4-based UnetPlusPlus.
+- **Features**: Processes entire videos, generating a downloadable MP4 video annotated with segmentation masks indicating polyp presence.
+- **Usage**: Upload a colonoscopy video and download the processed video with highlighted polyp regions.
+
+### Patch Image Classification with Grad-CAM & SmoothGrad
+- **Purpose**: Classify tissue patches and provide interpretability through visual explanations.
+- **Model**: EfficientNet-b3.
+- **Features**: Displays batch predictions with Grad-CAM and SmoothGrad overlays for interpretability.
+- **Usage**: Upload multiple image patches simultaneously to receive class predictions along with visual overlays highlighting influential areas.
+
+### Whole-Slide Image (WSI) Classification
+- **Purpose**: Classify entire histopathology slides (WSIs) based on aggregated predictions of sampled patches.
+- **Model**: EfficientNet-b3.
+- **Features**: Computes the mean probability across slide patches to provide an overall slide-level classification.
+- **Usage**: Upload a WSI file and specify patch size and overlap to obtain slide-level diagnostic classification.
+
+## Running the Prototypes
+
+Follow these steps to launch and interact with each Gradio application:
+
+### Step 1: Environment Setup
+
+Ensure all dependencies are installed:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Step 2: Launch Application
+
+Run the desired Gradio application script from your terminal:
+
+```bash
+python "<application_script>.py"
+```
+
+Replace `<application_script>` with the specific file name (e.g., `colonscan_live_polyp_segmentation.py`).
+
+### Step 3: Interact via Browser
+
+Upon launch, access the application through the provided URL (typically `http://localhost:7860`):
+
+```
+Running on local URL: http://localhost:7860
+```
+
+Upload your data through the interactive interface and explore ColonoScan's AI-driven analysis features in real-time.
+
 
 ## Features
 
@@ -33,11 +96,7 @@ An end-to-end, containerized platform for automated analysis of colonoscopy data
 - **Colonoscopy Video Analysis**  
   - Upload colonoscopy video  
   - Receive detected polyp bounding boxes & counts  
-  - Powered by YOLOv5 inference service  
-
-- **Genomic Sample Profiling**  
-  - Upload FASTQ/DNA samples  
-  - Receive variant calls (VCF) & QC metrics  
+  - Powered by EfficientUnet++  
 
 - **Interpretability Maps**  
   - Grad-CAM & saliency overlays for uploaded image “patches”
@@ -51,31 +110,31 @@ An end-to-end, containerized platform for automated analysis of colonoscopy data
 ## Architecture
 
 \`\`\`
-┌────────────┐     ┌─────────────┐     ┌──────────────┐
-│  Frontend  │◀───▶│  Backend    │◀───▶│ PostgreSQL   │
-│ (Next.js)  │     │ (Django +   │     │ + Django ORM │
-└────────────┘     │  DRF + Celery)   └──────────────┘
-                       ▲     ▲     ▲
-                       │     │     │
-        ┌──────────────┘     │     └─────────────┐
-        │                    │                   │
-┌─────────────  ┐       ┌─────────────────┐    ┌──────────────┐
-│ Histopath.    │       │ Colonoscopy     │    │ Genomic      │
-│ Service       │       │ Service         │    │ Profiling    │
-│ (FastAPI +    │       │ (FastAPI +      │    │ Service      │
-│ MONAI/
- EfficientNet)    │       │ EfficientUnet++
-                          )       │       │      (Nextflow/   │
-└─────────────  ┘       └─────────────────┘    │  Flask)      │
-                                             └──────────────┘
+┌────────────┐                 ┌────────────────┐                 ┌──────────────┐
+│  Frontend  │      ◀───▶      │  Backend       │      ◀───▶      │ PostgreSQL   │
+│ (Next.js)  │                 │ (Django +      │                 │ + Django ORM │
+└────────────┘                 │  DRF + Celery) │                 └──────────────┘
+                               └────────────────┘
+                                    ▲       ▲                                     
+                                    │       │           
+                ┌───────────────────┘       └────────────────────────┐
+                │                                                    │
+        ┌────────────────┐                                  ┌─────────────────┐    
+        │   Histopath.   │                                  │ Colonoscopy     │    
+        │   Service      │                                  │ Service         │    
+        │   (FastAPI +   │                                  │ (FastAPI +      │    
+        │   MONAI/       │                                  │ EfficientUnet++)│
+        │  EfficientNet) │                                  │                 │ 
+        │                │                                  │                 │  
+        └────────────────┘                                  └─────────────────┘    
+                                             
 \`\`\`
 
 - **Ports**  
   - Backend: \`8000\`  
   - Frontend: \`3000\`  
   - Histopathology: \`8001\`  
-  - Colonoscopy: \`8002\`  
-  - Genomic Profiling: \`8003\`  
+  - Colonoscopy: \`8002\` 
   - Redis: \`6379\`  
   - Postgres: \`5432\`
 
@@ -158,20 +217,7 @@ GET    /api/videos/{id}/    # get JSON result_data
 
 - **Fields**  
   - \`frame_rate\`, \`resolution\`, \`uploaded\`, \`status\`  
-  - \`result\`: contains \`polyp_count\`, bounding boxes, timestamps  
-
----
-
-### Genomic API
-
-\`\`\`bash
-POST   /api/genomic/        # upload FASTQ(s)
-GET    /api/genomic/        # list jobs
-GET    /api/genomic/{id}/   # get VCF download & metrics
-\`\`\`
-
-- **Fields**  
-  - \`vcf\` (URL), \`metrics\` JSON  
+  - \`result\`: contains \`polyp_count\`, mask, timestamps  
 
 ---
 
@@ -213,7 +259,6 @@ GET /api/jobs/             # view all AnalysisJob statuses
 - **Microservices**  
   - Histopathology: \`cd histopathology && uvicorn main:app --reload --port 8001\`  
   - Colonoscopy:   \`cd colonoscopy   && uvicorn main:app --reload --port 8002\`  
-  - Genomics:      \`cd genomic_profiling && flask run --port 8003\` (or \`nextflow run ...\`)
 
 ---
 
