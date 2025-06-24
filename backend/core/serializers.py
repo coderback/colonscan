@@ -10,7 +10,6 @@ class AnalysisJobSerializer(serializers.ModelSerializer):
 
 class SlideSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source="job.status", read_only=True)
-    result_url = serializers.SerializerMethodField()
     summary = serializers.CharField(read_only=True)
     overview_map_url = serializers.SerializerMethodField()
 
@@ -19,22 +18,11 @@ class SlideSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "slide_file",
-            "uploaded",
+            "created",
             "status",
             "summary",
             "overview_map_url",
-            "result_url",
         ]
-
-    def get_result_url(self, obj):
-        """
-        If you still have a per‐patch result URL field, keep this.
-        Otherwise you can remove it.
-        """
-        request = self.context.get("request")
-        if obj.result_file:
-            return request.build_absolute_uri(obj.result_file.url)
-        return None
 
     def get_overview_map_url(self, obj):
         """
@@ -84,10 +72,17 @@ class PatchSerializer(serializers.ModelSerializer):
 class VideoSessionSerializer(serializers.ModelSerializer):
     status = serializers.CharField(source='job.status', read_only=True)
     result = serializers.JSONField(source='result_data', read_only=True)
+    processed_video_url = serializers.SerializerMethodField()
 
     class Meta:
         model = VideoSession
-        fields = ['id', 'video_file', 'frame_rate', 'resolution', 'uploaded', 'status', 'result']
+        fields = ['id', 'video_file', 'frame_rate', 'resolution', 'uploaded', 'status', 'result', 'processed_video_url']
+
+    def get_processed_video_url(self, obj):
+        request = self.context.get('request')
+        if obj.processed_video_file:
+            return request.build_absolute_uri(obj.processed_video_file.url)
+        return None
 
 
 class GenomicSampleSerializer(serializers.ModelSerializer):

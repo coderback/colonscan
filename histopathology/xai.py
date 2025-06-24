@@ -153,3 +153,67 @@ def infer_wsi(slide_path: str, patch_size: int = 224, overlap: float = 0.5) -> s
     mean_p = torch.cat(probs).mean().item()
     label = "malignant" if mean_p >= 0.5 else "benign"
     return f"Mean slide: {label} ({mean_p:.4f})"
+
+
+def infer_wsi_with_heatmap(slide_path: str, patch_size: int = 224, overlap: float = 0.5) -> tuple[str, Image.Image]:
+    """
+    WSI inference with overview heatmap generation.
+    Returns (summary_text, overview_heatmap_image)
+    """
+    reader = WSIReader("openslide")
+    ds = SlidingPatchWSIDataset(
+        data=[{"image": slide_path}],
+        patch_size=patch_size,
+        overlap=overlap,
+        transform=get_slide_transforms(patch_size),
+        reader=reader,
+        center_location=True,  # Need locations for heatmap
+        include_label=False,
+    )
+    loader = torch.utils.data.DataLoader(
+        ds, batch_size=32, collate_fn=list_data_collate, num_workers=0
+    )
+    model = load_model().to(DEVICE)
+    
+    # Get slide dimensions for heatmap
+    slide_img = reader.read(slide_path)
+    slide_width, slide_height = slide_img.dimensions  # Use OpenSlide dimensions
+    
+    # Initialize heatmap
+    heatmap = np.zeros((slide_height, slide_width), dtype=np.float32)
+    count_map = np.zeros((slide_height, slide_width), dtype=np.float32)
+    
+    probs = []
+    with torch.no_grad():
+        for batch in loader:
+            imgs = batch["image"].to(DEVICE)
+            locations = batch.get("location", None)
+            
+            logits = model(imgs)
+            p = F.softmax(logits, dim=1)[:, 1]
+            probs.append(p.cpu())
+            
+            # Update heatmap if locations are available
+            if locations is not None:
+                for i, (prob, loc) in enumerate(zip(p.cpu().numpy(), locations)):
+                    y, x = int(loc[0]), int(loc[1])
+                    # Add probability to heatmap (simple averaging)
+                    heatmap[y:y+patch_size, x:x+patch_size] += prob
+                    count_map[y:y+patch_size, x:x+patch_size] += 1
+    
+    # Normalize heatmap
+    count_map[count_map == 0] = 1  # Avoid division by zero
+    heatmap = heatmap / count_map
+    
+    # Create heatmap image
+    heatmap_norm = ((heatmap - heatmap.min()) / (heatmap.max() - heatmap.min() + 1e-6) * 255).astype(np.uint8)
+    heatmap_colored = cv2.applyColorMap(heatmap_norm, cv2.COLORMAP_JET)
+    heatmap_colored = cv2.cvtColor(heatmap_colored, cv2.COLOR_BGR2RGB)
+    heatmap_img = Image.fromarray(heatmap_colored)
+    
+    # Generate summary
+    mean_p = torch.cat(probs).mean().item()
+    label = "malignant" if mean_p >= 0.5 else "benign"
+    summary = f"Mean slide: {label} ({mean_p:.4f})"
+    
+    return summary, heatmap_img

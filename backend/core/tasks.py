@@ -24,16 +24,16 @@ def analyze_slide(slide_id):
         # stream-slide file
         with open(slide.slide_file.path, "rb") as f:
             files = {"file": (slide.slide_file.name, f, "application/octet-stream")}
-            params = {"patch_size": 224, "overlap": 0.5}
-            resp = requests.post(SLIDE_URL, files=files, params=params)
+            params = {"patch_size": 224, "overlap": 0.5, "include_heatmap": True}
+            resp = requests.post(SLIDE_URL, files=files, params=params, timeout=1800)  # 30 minute timeout
         resp.raise_for_status()
         data = resp.json()
 
         # summary text from your FastAPI
         slide.summary = data["summary"]
 
-        # optional: decode an overview heatmap if you returned one
-        if "overview_map" in data:
+        # decode an overview heatmap if returned
+        if "overview_map" in data and data["overview_map"]:
             b64 = data["overview_map"]
             img_bytes = base64.b64decode(b64)
             slide.overview_map.save(
@@ -45,9 +45,18 @@ def analyze_slide(slide_id):
         slide.save()
         job.status = AnalysisJob.COMPLETED
 
+    except requests.exceptions.Timeout:
+        job.status = AnalysisJob.FAILED
+        job.log = "Analysis timed out after 30 minutes"
+    except requests.exceptions.ConnectionError:
+        job.status = AnalysisJob.FAILED
+        job.log = "Could not connect to histopathology service"
+    except requests.exceptions.HTTPError as e:
+        job.status = AnalysisJob.FAILED
+        job.log = f"HTTP error from histopathology service: {e}"
     except Exception as exc:
         job.status = AnalysisJob.FAILED
-        job.log = str(exc)
+        job.log = f"Analysis failed: {str(exc)}"
 
     finally:
         job.finished_at = timezone.now()
@@ -139,3 +148,48 @@ def analyze_genomic(sample_id):
     finally:
         job.finished_at = timezone.now()
         job.save()
+
+
+@shared_task
+def analyze_video(video_id):
+    video_session = VideoSession.objects.get(pk=video_id)
+    job = video_session.job
+    job.status = AnalysisJob.RUNNING
+    job.started_at = timezone.now()
+    job.save()
+
+    try:
+        # Send video file to colonoscopy microservice
+        with open(video_session.video_file.path, "rb") as f:
+            files = {"file": (video_session.video_file.name, f, "video/mp4")}
+            resp = requests.post(VIDEO_URL, files=files, timeout=3600)  # 1 hour timeout
+        resp.raise_for_status()
+
+        # Save processed video file from response
+        # Assume the microservice returns the processed video as a file in the response
+        # (Content-Disposition: attachment; filename=...)
+        processed_filename = f"processed_{video_session.video_file.name}"
+        video_session.processed_video_file.save(
+            processed_filename,
+            ContentFile(resp.content),
+            save=True
+        )
+        job.status = AnalysisJob.COMPLETED
+        job.log = "Polyp segmentation completed successfully."
+
+    except requests.exceptions.Timeout:
+        job.status = AnalysisJob.FAILED
+        job.log = "Video analysis timed out."
+    except requests.exceptions.ConnectionError:
+        job.status = AnalysisJob.FAILED
+        job.log = "Could not connect to colonoscopy service."
+    except requests.exceptions.HTTPError as e:
+        job.status = AnalysisJob.FAILED
+        job.log = f"HTTP error from colonoscopy service: {e}"
+    except Exception as exc:
+        job.status = AnalysisJob.FAILED
+        job.log = f"Video analysis failed: {str(exc)}"
+    finally:
+        job.finished_at = timezone.now()
+        job.save()
+        video_session.save()

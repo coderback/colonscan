@@ -63,6 +63,7 @@ class VideoSession(models.Model):
     resolution = models.CharField(max_length=20, blank=True, help_text="WxH")
     job = models.OneToOneField(AnalysisJob, null=True, blank=True, on_delete=models.SET_NULL)
     result_data = models.JSONField(null=True, blank=True, help_text="Bounding boxes, timestamps")
+    processed_video_file = models.FileField(upload_to='videos/processed/', null=True, blank=True, help_text="Processed/segmented video output")
 
 
 class GenomicSample(models.Model):

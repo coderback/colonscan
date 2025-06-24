@@ -24,7 +24,8 @@ export function AuthProvider({ children }) {
 
   // login(): call your DRF login endpoint and persist
   async function login(username, password) {
-    const { data } = await axios.post('/api/auth/login/', { username, password })
+    const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const { data } = await axios.post(`${API_BASE}/api/auth/login`, { username, password })
     const t = data.token
     setToken(t)
     sessionStorage.setItem('authToken', t)

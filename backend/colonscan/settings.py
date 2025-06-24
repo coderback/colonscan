@@ -25,7 +25,10 @@ SECRET_KEY = 'django-insecure-@em+_&@f0se931#0e82!#cxjddk9yd-v29yf*z)h&687(x&l4n
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', 'backend', '0.0.0.0', '*']
+
+# Disable automatic trailing slash redirects
+APPEND_SLASH = False
 
 
 # Application definition
@@ -39,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
+    'corsheaders',
     'core',
 ]
 
@@ -53,6 +57,7 @@ REST_FRAMEWORK = {
 
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -152,3 +157,11 @@ CELERY_RESULT_BACKEND  = os.getenv('CELERY_RESULT_BACKEND', 'redis://redis:6379/
 CELERY_ACCEPT_CONTENT  = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER= 'json'
+
+# CORS settings
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+CORS_ALLOW_CREDENTIALS = True

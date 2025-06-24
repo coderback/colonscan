@@ -44,10 +44,15 @@ services:
     build: ./frontend
     ports:
       - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules  # Prevents overwriting node_modules
     depends_on:
       - backend
     environment:
       NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'  # For Windows file watching
+      NEXT_PUBLIC_API_URL: http://localhost:8000
     command: npm run dev
 
   nginx:
@@ -93,11 +98,18 @@ services:
     container_name: iHistopathology
     image: colonscan/histopathology:latest
     # if you have GPUs, use the nvidia runtime
-    runtime: nvidia
+    # runtime: nvidia
     ports:
       - "8001:8001"
     volumes:
       - ./histopathology/models:/models:ro
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
+    restart: unless-stopped
 
   # Polyp detection service
   colonoscopy:

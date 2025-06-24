@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from core.views import health_check
 from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 from rest_framework.authtoken import views as drf_views
 from core.views import (
@@ -31,7 +33,7 @@ from core.views import (
 router = DefaultRouter()
 router.register(r'slides', SlideViewSet, basename='slide')
 router.register(r"patches", PatchViewSet, basename="patch")
-router.register(r'videos', VideoSessionViewSet, basename='video')
+router.register(r'videosessions', VideoSessionViewSet, basename='videosession')
 router.register(r'genomic', GenomicSampleViewSet, basename='genomic')
 router.register(r'jobs', AnalysisJobViewSet, basename='job')
 
@@ -39,5 +41,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check),
     path('api/', include(router.urls)),
-    path('api/auth/login/', drf_views.obtain_auth_token, name='api_token_auth'),
+    path('api/auth/login', drf_views.obtain_auth_token, name='api_token_auth'),
 ]
+
+# Serve media files in development
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
