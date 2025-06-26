@@ -3,46 +3,49 @@
 @tailwind utilities;
 
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
 :root {
-  --background: #f8fafc;
-  --foreground: #1e293b;
-  --primary: #0ea5e9;
+  --background: #f9fafb;
+  --foreground: #111827;
+  --primary: #005EB8;
   --primary-foreground: #ffffff;
-  --secondary: #64748b;
+  --secondary: #76C043;
   --secondary-foreground: #ffffff;
-  --accent: #06b6d4;
+  --accent: #0288D1;
   --accent-foreground: #ffffff;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: #e2e8f0;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --border: #e5e7eb;
   --input: #ffffff;
-  --ring: #0ea5e9;
+  --ring: #005EB8;
   --card: #ffffff;
-  --card-foreground: #1e293b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --error: #ef4444;
-  --medical-blue: #1e40af;
-  --medical-light-blue: #dbeafe;
+  --card-foreground: #111827;
+  --success: #007F3B;
+  --warning: #FFB81C;
+  --error: #B00020;
+  --info: #0288D1;
+  --medical-blue: #005EB8;
+  --medical-light-blue: #eff6ff;
   --medical-gray: #6b7280;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  --font-sans: 'Arial', 'Helvetica', sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', 'Monaco', 'Consolas', monospace;
 }
 
 * {
   box-sizing: border-box;
+  font-family: inherit;
 }
 
-body {
+html, body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: 'Roboto', Arial, sans-serif;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -68,33 +71,57 @@ body {
 
 /* Medical card styles */
 .medical-card {
-  @apply bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-200;
+  @apply bg-white border border-neutral-200 rounded-lg shadow-lg hover:shadow-xl transition-all duration-200;
 }
 
 .medical-card-header {
-  @apply p-6 border-b border-gray-100;
+  @apply px-6 py-4 border-b border-gray-200 text-lg font-bold text-neutral-800;
 }
 
 .medical-card-content {
-  @apply p-6;
+  @apply px-6 py-4 text-sm text-neutral-700;
+}
+
+.medical-card-footer {
+  @apply px-6 py-4 border-t border-gray-200 text-xs text-neutral-600;
 }
 
 /* Medical button styles */
 .btn-primary {
-  @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+  @apply bg-[#005EB8] hover:bg-[#004a94] text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-[#005EB8] focus:ring-offset-2;
 }
 
 .btn-secondary {
-  @apply bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+  @apply bg-gray-600 hover:bg-gray-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
 }
 
 .btn-success {
-  @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+  @apply bg-[#76C043] hover:bg-[#5a9a2e] text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-[#76C043] focus:ring-offset-2;
+}
+
+.btn-danger {
+  @apply bg-[#B00020] hover:bg-[#8a001a] text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-[#B00020] focus:ring-offset-2;
+}
+
+.btn-warning {
+  @apply bg-[#FFB81C] hover:bg-[#e6a600] text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-[#FFB81C] focus:ring-offset-2;
+}
+
+.btn-outline {
+  @apply border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-[#005EB8] focus:ring-offset-2;
+}
+
+.btn-ghost {
+  @apply text-gray-700 hover:bg-gray-100 font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
 }
 
 /* Medical input styles */
 .medical-input {
-  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200;
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:border-[#005EB8] focus:outline-none focus:ring-1 focus:ring-[#005EB8] transition-colors duration-200;
+}
+
+.medical-input-error {
+  @apply border-[#B00020] focus:border-[#B00020] focus:ring-[#B00020];
 }
 
 /* Medical progress bar */
@@ -103,24 +130,88 @@ body {
 }
 
 .medical-progress-bar {
-  @apply bg-blue-600 h-2.5 rounded-full transition-all duration-300;
+  @apply bg-[#005EB8] h-2.5 rounded-full transition-all duration-300;
 }
 
 /* Medical status indicators */
 .status-pending {
-  @apply bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium;
+  @apply bg-[#FFB81C]/10 text-[#FFB81C] px-2.5 py-0.5 rounded-full text-xs font-medium;
 }
 
 .status-running {
-  @apply bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium;
+  @apply bg-[#0288D1]/10 text-[#0288D1] px-2.5 py-0.5 rounded-full text-xs font-medium;
 }
 
 .status-completed {
-  @apply bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium;
+  @apply bg-[#007F3B]/10 text-[#007F3B] px-2.5 py-0.5 rounded-full text-xs font-medium;
 }
 
 .status-failed {
-  @apply bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium;
+  @apply bg-[#B00020]/10 text-[#B00020] px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Medical alert styles */
+.alert-success {
+  @apply bg-[#007F3B]/5 border-[#007F3B]/20 text-[#007F3B] rounded-lg p-4 border;
+}
+
+.alert-warning {
+  @apply bg-[#FFB81C]/5 border-[#FFB81C]/20 text-[#FFB81C] rounded-lg p-4 border;
+}
+
+.alert-error {
+  @apply bg-[#B00020]/5 border-[#B00020]/20 text-[#B00020] rounded-lg p-4 border;
+}
+
+.alert-info {
+  @apply bg-[#0288D1]/5 border-[#0288D1]/20 text-[#0288D1] rounded-lg p-4 border;
+}
+
+/* Medical badge styles */
+.badge-success {
+  @apply bg-[#007F3B]/10 text-[#007F3B] inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-warning {
+  @apply bg-[#FFB81C]/10 text-[#FFB81C] inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-error {
+  @apply bg-[#B00020]/10 text-[#B00020] inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-info {
+  @apply bg-[#0288D1]/10 text-[#0288D1] inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-default {
+  @apply bg-gray-100 text-gray-800 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+/* Form field styles */
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-2;
+}
+
+.form-error {
+  @apply text-xs text-[#B00020] mt-1;
+}
+
+.form-help {
+  @apply text-xs text-gray-500 mt-1;
+}
+
+/* Navigation styles */
+.nav-item {
+  @apply flex items-center px-4 py-3 text-sm font-medium transition-colors duration-200;
+}
+
+.nav-item-active {
+  @apply bg-[#005EB8]/5 border-r-2 border-[#005EB8] text-[#005EB8];
+}
+
+.nav-item-inactive {
+  @apply text-gray-700 hover:bg-gray-50 hover:text-gray-900;
 }
 
 @media (prefers-color-scheme: dark) {

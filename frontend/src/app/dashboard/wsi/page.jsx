@@ -151,29 +151,29 @@ export default function WSIPage() {
   const getStatusIcon = (status) => {
     switch (status) {
       case 'PENDING':
-        return <Clock className="h-4 w-4 text-yellow-600" />;
+        return <Clock className="h-4 w-4 text-[#FFB81C]" />;
       case 'RUNNING':
-        return <Play className="h-4 w-4 text-blue-600 animate-pulse" />;
+        return <Play className="h-4 w-4 text-[#005EB8] animate-pulse" />;
       case 'COMPLETED':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-[#007F3B]" />;
       case 'FAILED':
-        return <AlertCircle className="h-4 w-4 text-red-600" />;
+        return <AlertCircle className="h-4 w-4 text-[#B00020]" />;
       default:
         return <Clock className="h-4 w-4 text-gray-600" />;
     }
   };
 
   const getStatusBadge = (status) => {
-    const baseClasses = "px-2 py-1 rounded-full text-xs font-medium";
+    const baseClasses = "px-2.5 py-0.5 rounded-full text-xs font-medium";
     switch (status) {
       case 'PENDING':
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
+        return `${baseClasses} bg-[#FFB81C]/10 text-[#FFB81C]`;
       case 'RUNNING':
-        return `${baseClasses} bg-blue-100 text-blue-800`;
+        return `${baseClasses} bg-[#005EB8]/10 text-[#005EB8]`;
       case 'COMPLETED':
-        return `${baseClasses} bg-green-100 text-green-800`;
+        return `${baseClasses} bg-[#007F3B]/10 text-[#007F3B]`;
       case 'FAILED':
-        return `${baseClasses} bg-red-100 text-red-800`;
+        return `${baseClasses} bg-[#B00020]/10 text-[#B00020]`;
       default:
         return `${baseClasses} bg-gray-100 text-gray-800`;
     }
@@ -198,10 +198,13 @@ export default function WSIPage() {
     setPatchProgress(0);
     setPatchError(null);
     setPatchResults([]);
-    const form = new FormData();
-    patchFiles.forEach(file => form.append('files', file));
+
+    const formData = new FormData();
+    patchFiles.forEach(file => {
+      formData.append('patches', file);
+    });
+
     try {
-      // Simulate progress
       const progressInterval = setInterval(() => {
         setPatchProgress(prev => {
           if (prev >= 90) {
@@ -211,301 +214,239 @@ export default function WSIPage() {
           return prev + 10;
         });
       }, 200);
-      const res = await axios.post(`${API_BASE}/api/patches/batch/`, form, {
+
+      const response = await axios.post(`${API_BASE}/api/slides/patches/`, formData, {
         headers: {
           Authorization: `Token ${token}`
         }
       });
+
       setPatchProgress(100);
-      setTimeout(() => setPatchProgress(0), 1000);
-      setPatchResults(res.data);
-    } catch (err) {
-      setPatchError('Patch upload failed.');
-      console.error('Patch upload error:', err);
+      setPatchResults(response.data.results);
+      
+      setTimeout(() => {
+        setPatchProgress(0);
+        setPatchFiles([]);
+      }, 1000);
+
+    } catch (error) {
+      console.error('Patch upload failed:', error);
+      setPatchError('Patch upload failed. Please try again.');
     } finally {
       setPatchUploading(false);
-      setPatchFiles([]);
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005EB8]"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="border-b border-gray-200 pb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <Microscope className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Whole Slide Image Analysis</h1>
-              <p className="text-gray-600 mt-1">Upload and analyze histopathology slides with AI</p>
-            </div>
-          </div>
-          <Button 
-            onClick={fetchSlides} 
-            variant="outline" 
-            size="sm"
-            disabled={loading}
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">WSI Classification</h1>
+          <p className="text-gray-600 mt-1">Upload and analyze whole slide images for tissue classification</p>
         </div>
+        <Button onClick={fetchSlides} variant="outline" size="sm">
+          <RefreshCw className="h-4 w-4 mr-2" />
+          Refresh
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Upload Section */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Upload className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Upload Slide</h2>
-                  <p className="text-sm text-gray-600">Upload .svs or .tiff files</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <Input 
-                  type="file" 
-                  accept=".svs,.tiff,.tif" 
-                  onChange={handleFileSelect}
-                  className="hidden"
-                  id="slide-upload"
-                />
-                <label htmlFor="slide-upload" className="cursor-pointer">
-                  <span className="text-sm text-gray-600">
-                    {selectedFile ? selectedFile.name : 'Click to select WSI file'}
-                  </span>
-                </label>
-              </div>
-              
-              {uploadProgress > 0 && (
-                <div className="space-y-2">
-                  <Progress value={uploadProgress} className="w-full" />
-                  <p className="text-xs text-gray-500 text-center">
-                    {uploadProgress}% uploaded
-                  </p>
-                </div>
-              )}
-              
-              <Button 
-                onClick={uploadSlide} 
-                disabled={uploading || !selectedFile}
-                className="w-full"
+      {/* Upload Section */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-bold text-neutral-800">Upload WSI File</h2>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <Input
+                type="file"
+                accept=".svs,.tiff,.tif"
+                onChange={handleFileSelect}
+                className="flex-1"
+              />
+              <Button
+                onClick={uploadSlide}
+                disabled={!selectedFile || uploading}
+                className="bg-[#005EB8] hover:bg-[#004a94]"
               >
-                {uploading ? 'Uploading...' : 'Upload Slide'}
+                <Upload className="h-4 w-4 mr-2" />
+                {uploading ? 'Uploading...' : 'Upload'}
               </Button>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+            
+            {uploadProgress > 0 && (
+              <UploadProgress progress={uploadProgress} />
+            )}
+            
+            {selectedFile && (
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <FileText className="h-4 w-4" />
+                <span>Selected: {selectedFile.name}</span>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Patch Analysis Section */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <FileText className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Patch Analysis</h2>
-                  <p className="text-sm text-gray-600">Upload tissue patches for classification</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors cursor-pointer"
-                onClick={() => document.getElementById('patch-upload').click()}
-                tabIndex={0}
-                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') document.getElementById('patch-upload').click(); }}
-                role="button"
-                aria-label="Select patch images"
-              >
-                <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                <Input
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handlePatchChange}
-                  className="hidden"
-                  id="patch-upload"
-                />
-                <span className="text-sm text-gray-600">
-                  {patchFiles.length > 0
-                    ? `${patchFiles.length} file(s) selected`
-                    : 'Click or tap to select patch images'}
-                </span>
-              </div>
-              {patchUploading && (
-                <UploadProgress progress={patchProgress} fileName={patchFiles.map(f => f.name).join(', ')} />
-              )}
-              {patchError && (
-                <div className="text-red-600 text-sm">{patchError}</div>
-              )}
+      {/* Patch Upload Section */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-bold text-neutral-800">Batch Patch Analysis</h2>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="flex items-center space-x-4">
+              <Input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handlePatchChange}
+                className="flex-1"
+              />
               <Button
                 onClick={uploadPatches}
-                disabled={patchUploading || !patchFiles.length}
-                className="w-full"
+                disabled={!patchFiles.length || patchUploading}
+                variant="outline"
               >
-                {patchUploading ? 'Analyzing...' : 'Analyze Patches'}
+                <Upload className="h-4 w-4 mr-2" />
+                {patchUploading ? 'Processing...' : `Upload ${patchFiles.length} Patches`}
               </Button>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Slides List */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <FileText className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">Analysis History</h2>
-                    <p className="text-sm text-gray-600">
-                      {slides.length} slide{slides.length !== 1 ? 's' : ''} analyzed
-                    </p>
-                  </div>
-                </div>
+            </div>
+            
+            {patchProgress > 0 && (
+              <UploadProgress progress={patchProgress} />
+            )}
+            
+            {patchError && (
+              <div className="flex items-center space-x-2 p-3 bg-[#B00020]/5 border border-[#B00020]/20 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-[#B00020]" />
+                <span className="text-sm text-[#B00020]">{patchError}</span>
               </div>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="h-8 w-8 text-gray-400 animate-spin mx-auto mb-2" />
-                  <p className="text-gray-500">Loading slides...</p>
-                </div>
-              ) : slides.length === 0 ? (
-                <div className="text-center py-8">
-                  <Microscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No slides uploaded</h3>
-                  <p className="text-gray-500">Upload your first slide to get started</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {slides.map((slide) => (
-                    <div 
-                      key={slide.id} 
-                      className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors cursor-pointer"
-                      onClick={() => openDetailModal(slide)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1">
-                          <div className="p-2 bg-gray-100 rounded-lg">
-                            <ImageIcon className="h-4 w-4 text-gray-600" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="text-sm font-medium text-gray-900 truncate">
-                              {getFileName(slide.slide_file)}
-                            </h3>
-                            <p className="text-xs text-gray-500">
-                              Uploaded {formatDate(slide.created)}
-                            </p>
-                          </div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center space-x-2">
-                            {getStatusIcon(slide.status)}
-                            <span className={getStatusBadge(slide.status)}>
-                              {slide.status}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center space-x-1">
-                            {slide.status === 'COMPLETED' && slide.overview_map_url && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(slide.overview_map_url, '_blank');
-                                }}
-                              >
-                                <Eye className="h-4 w-4" />
-                              </Button>
-                            )}
-                            
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteSlide(slide.id);
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+            )}
+            
+            {patchResults.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-medium text-gray-900">Patch Results:</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {patchResults.map((result, index) => (
+                    <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-900">
+                          Patch {index + 1}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded-full ${
+                          result.classification === 'benign' 
+                            ? 'bg-[#007F3B]/10 text-[#007F3B]' 
+                            : 'bg-[#B00020]/10 text-[#B00020]'
+                        }`}>
+                          {result.classification}
+                        </span>
                       </div>
-                      
-                      {slide.summary && (
-                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <BarChart3 className="h-4 w-4 text-gray-600" />
-                            <span className="text-sm font-medium text-gray-900">Analysis Result</span>
-                          </div>
-                          <p className="text-sm text-gray-700">{slide.summary}</p>
-                        </div>
-                      )}
+                      <p className="text-xs text-gray-600">
+                        Confidence: {(result.confidence * 100).toFixed(1)}%
+                      </p>
                     </div>
                   ))}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Patch Results */}
-      {patchResults && patchResults.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <h2 className="text-xl font-semibold text-gray-900">Patch Analysis Results</h2>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {patchResults.map((result, idx) => (
-                <div key={idx} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <img src={result.image_url} alt="patch" className="w-12 h-12 object-cover rounded" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{result.class_name}</div>
-                      <div className="text-xs text-gray-600">Prob: {result.probabilities?.join(', ')}</div>
+      {/* Slides List */}
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-bold text-neutral-800">Uploaded Slides</h2>
+        </CardHeader>
+        <CardContent>
+          {slides.length === 0 ? (
+            <div className="text-center py-8">
+              <Microscope className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">No slides uploaded yet</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {slides.map((slide) => (
+                <div key={slide.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <ImageIcon className="h-8 w-8 text-[#005EB8]" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">
+                        {getFileName(slide.slide_file)}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        Uploaded: {formatDate(slide.created)}
+                      </p>
+                      {slide.summary && (
+                        <p className="text-xs text-gray-600 mt-1">{slide.summary}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="flex space-x-2 mt-2">
-                    {result.gradcam_url && (
-                      <img src={result.gradcam_url} alt="GradCAM" className="w-20 h-20 object-cover rounded border" />
-                    )}
-                    {result.saliency_url && (
-                      <img src={result.saliency_url} alt="Saliency" className="w-20 h-20 object-cover rounded border" />
-                    )}
+                  
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      {getStatusIcon(slide.status)}
+                      <span className={getStatusBadge(slide.status)}>
+                        {slide.status}
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        onClick={() => openDetailModal(slide)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      
+                      {slide.status === 'COMPLETED' && (
+                        <Button
+                          onClick={() => window.open(slide.slide_file, '_blank')}
+                          variant="outline"
+                          size="sm"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      )}
+                      
+                      <Button
+                        onClick={() => deleteSlide(slide.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-[#B00020] hover:bg-[#B00020]/10"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
-      {/* Detail Modal */}
-      <SlideDetailModal
-        slide={selectedSlide}
-        isOpen={detailModalOpen}
-        onClose={() => setDetailModalOpen(false)}
-      />
+      {/* Slide Detail Modal */}
+      {selectedSlide && (
+        <SlideDetailModal
+          slide={selectedSlide}
+          isOpen={detailModalOpen}
+          onClose={() => setDetailModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

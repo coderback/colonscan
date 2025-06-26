@@ -17,8 +17,8 @@
     "next": "^15.3.1",
     "react": "^19.1.0",
     "react-dom": "^19.0.0",
+    "recharts": "^3.0.0",
     "reconnecting-websocket": "^4.4.0",
-    "tailwind": "^2.3.1",
     "uuid": "^11.1.0"
   },
   "devDependencies": {

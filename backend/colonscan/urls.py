@@ -27,7 +27,9 @@ from core.views import (
     VideoSessionViewSet,
     GenomicSampleViewSet,
     AnalysisJobViewSet,
-    health_check
+    health_check,
+    analytics_dashboard,
+    signup
 )
 
 router = DefaultRouter()
@@ -40,6 +42,8 @@ router.register(r'jobs', AnalysisJobViewSet, basename='job')
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/health/', health_check),
+    path('api/analytics/', analytics_dashboard),
+    path('api/auth/signup', signup),
     path('api/', include(router.urls)),
     path('api/auth/login', drf_views.obtain_auth_token, name='api_token_auth'),
 ]

@@ -34,6 +34,12 @@ export default function DashboardLayout({ children }) {
 
   const navigation = [
     {
+      name: 'Dashboard',
+      href: '/dashboard',
+      icon: Activity,
+      description: 'Analytics & Overview'
+    },
+    {
       name: 'WSI Analysis',
       href: '/dashboard/wsi',
       icon: Microscope,

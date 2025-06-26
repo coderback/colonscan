@@ -7,6 +7,13 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.core.files.base import ContentFile
 import base64
 import requests
+from django.db.models import Count, Q
+from django.utils import timezone
+from datetime import timedelta
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate
+from rest_framework import status
+from rest_framework.authtoken.models import Token
 from .models import Slide, Patch, VideoSession, GenomicSample, AnalysisJob
 from .serializers import (
     SlideSerializer,
@@ -203,3 +210,211 @@ class AnalysisJobViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = AnalysisJob.objects.all()
     serializer_class = AnalysisJobSerializer
     permission_classes = [IsAuthenticated]
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def analytics_dashboard(request):
+    """
+    Get comprehensive analytics for the dashboard.
+    """
+    user = request.user
+    
+    # Get date ranges
+    now = timezone.now()
+    last_30_days = now - timedelta(days=30)
+    last_7_days = now - timedelta(days=7)
+    
+    # Slides analytics
+    slides = Slide.objects.filter(owner=user)
+    slides_stats = {
+        'total': slides.count(),
+        'completed': slides.filter(job__status='COMPLETED').count(),
+        'pending': slides.filter(job__status='PENDING').count(),
+        'failed': slides.filter(job__status='FAILED').count(),
+        'last_30_days': slides.filter(created__gte=last_30_days).count(),
+        'last_7_days': slides.filter(created__gte=last_7_days).count(),
+    }
+    
+    # Videos analytics
+    videos = VideoSession.objects.filter(owner=user)
+    videos_stats = {
+        'total': videos.count(),
+        'completed': videos.filter(job__status='COMPLETED').count(),
+        'pending': videos.filter(job__status='PENDING').count(),
+        'failed': videos.filter(job__status='FAILED').count(),
+        'last_30_days': videos.filter(uploaded__gte=last_30_days).count(),
+        'last_7_days': videos.filter(uploaded__gte=last_7_days).count(),
+    }
+    
+    # Genomic analytics
+    genomic = GenomicSample.objects.filter(owner=user)
+    genomic_stats = {
+        'total': genomic.count(),
+        'completed': genomic.filter(job__status='COMPLETED').count(),
+        'pending': genomic.filter(job__status='PENDING').count(),
+        'failed': genomic.filter(job__status='FAILED').count(),
+        'last_30_days': genomic.filter(uploaded__gte=last_30_days).count(),
+        'last_7_days': genomic.filter(uploaded__gte=last_7_days).count(),
+    }
+    
+    # Overall performance metrics
+    all_jobs = AnalysisJob.objects.filter(
+        Q(slide__owner=user) | Q(videosession__owner=user) | Q(genomicsample__owner=user)
+    )
+    
+    total_jobs = all_jobs.count()
+    completed_jobs = all_jobs.filter(status='COMPLETED').count()
+    success_rate = (completed_jobs / total_jobs * 100) if total_jobs > 0 else 0
+    
+    # Recent activity (last 10 items)
+    recent_slides = slides.order_by('-created')[:3]
+    recent_videos = videos.order_by('-uploaded')[:3]
+    recent_genomic = genomic.order_by('-uploaded')[:4]
+    
+    recent_activity = []
+    
+    for slide in recent_slides:
+        recent_activity.append({
+            'type': 'slide',
+            'id': slide.id,
+            'title': slide.slide_file.name.split('/')[-1],
+            'status': slide.job.status if slide.job else 'PENDING',
+            'timestamp': slide.created,
+            'summary': slide.summary
+        })
+    
+    for video in recent_videos:
+        recent_activity.append({
+            'type': 'video',
+            'id': video.id,
+            'title': video.video_file.name.split('/')[-1],
+            'status': video.job.status if video.job else 'PENDING',
+            'timestamp': video.uploaded,
+            'summary': f"Video analysis - {video.resolution or 'Unknown resolution'}"
+        })
+    
+    for sample in recent_genomic:
+        recent_activity.append({
+            'type': 'genomic',
+            'id': sample.id,
+            'title': sample.sample_file.name.split('/')[-1],
+            'status': sample.job.status if sample.job else 'PENDING',
+            'timestamp': sample.uploaded,
+            'summary': f"Genomic analysis - {sample.sample_type}"
+        })
+    
+    # Sort by timestamp and take top 10
+    recent_activity.sort(key=lambda x: x['timestamp'], reverse=True)
+    recent_activity = recent_activity[:10]
+    
+    # Model performance stats (mock data for now)
+    model_stats = {
+        'wsi_accuracy': 94.2,
+        'polyp_detection': 89.7,
+        'genomic_accuracy': 91.3,
+        'overall_accuracy': 91.7
+    }
+    
+    # Processing time trends (mock data)
+    processing_trends = [
+        {'date': '2024-01', 'avg_time': 3.2},
+        {'date': '2024-02', 'avg_time': 2.8},
+        {'date': '2024-03', 'avg_time': 2.5},
+        {'date': '2024-04', 'avg_time': 2.1},
+        {'date': '2024-05', 'avg_time': 1.9},
+        {'date': '2024-06', 'avg_time': 1.7}
+    ]
+    
+    return Response({
+        'slides': slides_stats,
+        'videos': videos_stats,
+        'genomic': genomic_stats,
+        'performance': {
+            'total_jobs': total_jobs,
+            'completed_jobs': completed_jobs,
+            'success_rate': round(success_rate, 1),
+            'avg_processing_time': 2.5  # minutes
+        },
+        'recent_activity': recent_activity,
+        'model_stats': model_stats,
+        'processing_trends': processing_trends,
+        'growth': {
+            'slides_30d': slides_stats['last_30_days'],
+            'videos_30d': videos_stats['last_30_days'],
+            'genomic_30d': genomic_stats['last_30_days'],
+            'total_30d': slides_stats['last_30_days'] + videos_stats['last_30_days'] + genomic_stats['last_30_days']
+        }
+    })
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def signup(request):
+    """
+    Register a new user account.
+    """
+    try:
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        confirm_password = request.data.get('confirm_password')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+
+        # Validation
+        if not all([username, email, password, confirm_password]):
+            return Response({
+                'error': 'All fields are required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if password != confirm_password:
+            return Response({
+                'error': 'Passwords do not match'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(password) < 8:
+            return Response({
+                'error': 'Password must be at least 8 characters long'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if username already exists
+        if User.objects.filter(username=username).exists():
+            return Response({
+                'error': 'Username already exists'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Check if email already exists
+        if User.objects.filter(email=email).exists():
+            return Response({
+                'error': 'Email already registered'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create user
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # Create auth token
+        token, created = Token.objects.get_or_create(user=user)
+
+        return Response({
+            'message': 'User registered successfully',
+            'token': token.key,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+        }, status=status.HTTP_201_CREATED)
+
+    except Exception as e:
+        return Response({
+            'error': 'Registration failed. Please try again.'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
