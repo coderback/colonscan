@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import axios from 'axios';
 import { 
@@ -44,6 +45,7 @@ import { Card, CardHeader, CardContent } from '@/components/ui/card';
 
 export default function DashboardPage() {
   const { token } = useAuth();
+  const router = useRouter();
   const [analytics, setAnalytics] = useState({
     slides: { total: 0, completed: 0, pending: 0, failed: 0 },
     videos: { total: 0, completed: 0, pending: 0, failed: 0 },
@@ -55,7 +57,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://0.0.0.0:8000';
+  // Smart API base URL detection for Docker vs local development
+  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   // Chart colors - updated to match design system
   const COLORS = ['#005EB8', '#76C043', '#FFB81C', '#B00020', '#0288D1'];
@@ -63,18 +66,39 @@ export default function DashboardPage() {
 
 
   useEffect(() => {
+    console.log('Dashboard useEffect - token:', token); // Debug log
     if (token) {
       fetchAnalytics();
+    } else {
+      console.log('No token found, redirecting to login');
+      router.push('/login');
     }
-  }, [token]);
+  }, [token, router]);
 
   const fetchAnalytics = async () => {
     try {
       setLoading(true);
-      const headers = { Authorization: `Token ${token}` };
       
-      // Use the new analytics endpoint
-      const analyticsRes = await axios.get(`${API_BASE}/api/analytics/`, { headers });
+      // Debug current configuration
+      console.log('🔍 DEBUG: API_BASE =', API_BASE);
+      console.log('🔍 DEBUG: process.env.NEXT_PUBLIC_API_URL =', process.env.NEXT_PUBLIC_API_URL);
+      console.log('🔍 DEBUG: window.location =', window.location.href);
+      
+      // Test basic connectivity first
+      console.log('🔗 Testing basic connectivity...');
+      try {
+        const basicTest = await fetch(`${API_BASE}/api/health/`);
+        console.log('✅ Health check response:', basicTest.status, basicTest.statusText);
+      } catch (connectError) {
+        console.error('❌ Basic connectivity failed:', connectError.message);
+        setError(`Cannot connect to backend at ${API_BASE}. Is the backend running?`);
+        setLoading(false);
+        return;
+      }
+      
+      const headers = { Authorization: `Token ${token}` };
+      console.log('📡 Attempting analytics request to:', `${API_BASE}/api/analytics/`);
+      const analyticsRes = await axios.get(`${API_BASE}/api/analytics`, { headers });
       const data = analyticsRes.data;
 
       setAnalytics({
@@ -102,6 +126,13 @@ export default function DashboardPage() {
     } catch (err) {
       setError('Failed to fetch analytics data');
       console.error('Analytics error:', err);
+      console.error('Error details:', {
+        message: err.message,
+        code: err.code,
+        config: err.config?.url,
+        response: err.response?.status,
+        responseData: err.response?.data
+      });
     } finally {
       setLoading(false);
     }
@@ -153,6 +184,16 @@ export default function DashboardPage() {
     { date: '2024-05', time: 1.9 },
     { date: '2024-06', time: 1.7 }
   ];
+
+  // Redirect to login if not authenticated
+  if (!token) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#005EB8]"></div>
+        <p className="ml-3">Redirecting to login...</p>
+      </div>
+    );
+  }
 
   if (loading) {
     return (

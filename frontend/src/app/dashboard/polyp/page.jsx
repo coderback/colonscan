@@ -27,6 +27,7 @@ export default function PolypSegmentationPage() {
   const [selectedSession, setSelectedSession] = useState(null);
   const [sessionModalOpen, setSessionModalOpen] = useState(false);
 
+  // Smart API base URL detection for Docker vs local development
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   const COLONOSCOPY_API = process.env.NEXT_PUBLIC_COLONOSCOPY_API_URL || 'http://localhost:8002';
 

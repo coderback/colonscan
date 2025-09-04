@@ -40,7 +40,7 @@ export default function WSIPage() {
   const [patchResults, setPatchResults] = useState([]);
   const [patchError, setPatchError] = useState(null);
 
-  // API base URL
+  // Smart API base URL detection for Docker vs local development  
   const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   useEffect(() => {
@@ -215,7 +215,7 @@ export default function WSIPage() {
         });
       }, 200);
 
-      const response = await axios.post(`${API_BASE}/api/slides/patches/`, formData, {
+      const response = await axios.post(`${API_BASE}/api/patches/batch/`, formData, {
         headers: {
           Authorization: `Token ${token}`
         }
