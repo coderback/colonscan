@@ -18,6 +18,8 @@
     Array.prototype.forEach.call(thumbs.children, function (b, j) {
       b.setAttribute('aria-pressed', j === i ? 'true' : 'false');
     });
+    window.COLONO_CURRENT = i;
+    document.dispatchEvent(new CustomEvent('colono:sample'));
   }
 
   results.forEach(function (r, i) {

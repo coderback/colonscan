@@ -30,20 +30,39 @@
       <figure class="stage" id="stage">
         <img id="img-base" alt="" width="640" height="508">
         <img id="img-pred" class="layer" alt="" width="640" height="508">
+        <canvas id="live-layer" class="layer" role="img" aria-label="Live model prediction, computed on your device" hidden></canvas>
         <img id="img-truth" class="layer" alt="" width="640" height="508">
       </figure>
       <div class="panel">
         <fieldset class="toggles">
           <legend>Show on the image</legend>
-          <label><input type="checkbox" id="t-pred" checked><span class="key key-pred" aria-hidden="true"></span> Model prediction</label>
+          <label><input type="checkbox" id="t-pred" checked><span class="key key-pred" aria-hidden="true"></span> Saved model prediction</label>
+          <label id="t-live-row" hidden><input type="checkbox" id="t-live"><span class="key key-live" aria-hidden="true"></span> Live prediction, from your device</label>
           <label><input type="checkbox" id="t-truth"><span class="key key-truth" aria-hidden="true"></span> Expert annotation</label>
         </fieldset>
         <dl class="scores" aria-live="polite">
-          <div><dt>IoU</dt><dd id="s-iou"></dd></div>
-          <div><dt>Dice</dt><dd id="s-dice"></dd></div>
-          <div><dt>Predicted polyp area</dt><dd id="s-area"></dd></div>
+          <div><dt>IoU, saved</dt><dd id="s-iou"></dd></div>
+          <div><dt>Dice, saved</dt><dd id="s-dice"></dd></div>
+          <div><dt>Predicted polyp area, saved</dt><dd id="s-area"></dd></div>
         </dl>
         <p class="fine">IoU and Dice compare this one prediction with the dataset's annotation at 256 by 256 pixels.</p>
+        <div class="live">
+          <h3 id="live-title">Run the model live in your browser</h3>
+          <p class="fine">Your device runs the model on the image above. The first run downloads about 44 MB. No image or result is sent to a server.</p>
+          <div class="live-actions">
+            <button type="button" id="live-run" class="btn-live">Run on this image (about 44 MB download)</button>
+            <button type="button" id="live-cancel" class="btn-quiet" hidden>Cancel</button>
+          </div>
+          <progress id="live-progress" aria-labelledby="live-title" hidden></progress>
+          <p id="live-status" class="live-status" role="status"></p>
+          <dl class="scores" id="live-scores" aria-label="Live result from this device" hidden>
+            <div><dt>IoU, live</dt><dd id="l-iou"></dd></div>
+            <div><dt>Dice, live</dt><dd id="l-dice"></dd></div>
+            <div><dt>Predicted polyp area, live</dt><dd id="l-area"></dd></div>
+            <div><dt>Inference time on your device</dt><dd id="l-ms"></dd></div>
+          </dl>
+          <p class="fine" id="live-detail" hidden></p>
+        </div>
       </div>
     </div>
     <div class="thumbs" id="thumbs" role="group" aria-label="Choose a sample image"></div>
@@ -93,5 +112,6 @@
 </main>
 <script src="results.js"></script>
 <script src="app.js"></script>
+<script src="live.js"></script>
 </body>
 </html>

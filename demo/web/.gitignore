@@ -2,3 +2,5 @@
 
 .vercel
 .env*
+# Too large for git. demo/export reproduces it, and it is deployed with the site.
+models/*.onnx

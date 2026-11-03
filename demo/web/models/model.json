@@ -1,0 +1,7 @@
+{
+ "file": "efficient_unetpp.float16.e69f783a.onnx",
+ "bytes": 40194511,
+ "sha256": "e69f783ae0f0e8e0670f096c97279ea54ff59ee828ba648f1501b7bb4c920182",
+ "format": "float16",
+ "weights_commit": "1b96eec1444fcf26b49209b1c950c38eb7577ca6"
+}
