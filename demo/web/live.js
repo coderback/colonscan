@@ -327,7 +327,7 @@
       setCheck(tPred, true);
     }
     if (!busy) {
-      runBtn.textContent = r ? 'Run again on this image' : ready ? 'Run on this image' : 'Run on this image (about 44 MB download)';
+      runBtn.textContent = r ? 'Run again on this image' : ready ? 'Run on this image' : 'Run on this image (about 41 MB download)';
     }
   }
 
