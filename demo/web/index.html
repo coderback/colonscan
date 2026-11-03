@@ -82,7 +82,7 @@
       <li><strong>Threshold.</strong> Pixels above 0.5 become the polyp mask, which is scaled back up over the frame.</li>
     </ol>
     <p class="sub">The full system in the repo adds a Next.js frontend, a Django REST backend with Celery and PostgreSQL, and FastAPI inference services, run with Docker Compose. Only the model is shown here.</p>
-    <p class="sub">On the demo image's 2 CPU cores, warm inference took about 1 to 4 seconds per image, using about 620 MB of memory. The service code is in <code>demo/api</code>, and it accepts no uploads.</p>
+    <p class="sub">In a local container limited to 2 CPU cores, warm inference took about 1 to 4 seconds per image and used about 620 MB of memory. The service code is in <code>demo/api</code>, and it accepts no uploads.</p>
   </section>
 
   <footer class="foot">
