@@ -103,9 +103,19 @@
     return tensor;
   }
 
+  async function get(url, what) {
+    var res;
+    try {
+      res = await fetch(url);
+    } catch (err) {
+      throw new Error(what + ' could not be downloaded');
+    }
+    if (!res.ok) throw new Error(what + ' returned HTTP ' + res.status);
+    return res;
+  }
+
   async function decode(url) {
-    var res = await fetch(url);
-    if (!res.ok) throw new Error('a sample file returned HTTP ' + res.status);
+    var res = await get(url, 'a sample file');
     var bitmap = await createImageBitmap(await res.blob(), {
       colorSpaceConversion: 'none',
       premultiplyAlpha: 'none',
@@ -235,8 +245,7 @@
   }
 
   async function loadModel() {
-    var res = await fetch('models/model.json');
-    if (!res.ok) throw new Error('the model details returned HTTP ' + res.status);
+    var res = await get('models/model.json', 'the model details');
     var info = await res.json();
     status.textContent = 'Downloading the model: 0.0 of ' + mb(info.bytes) + ' MB.';
     progress.hidden = false;

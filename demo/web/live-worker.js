@@ -62,7 +62,8 @@ var handlers = {
         graphOptimizationLevel: 'all',
       });
     } catch (err) {
-      throw fail('session', err);
+      console.warn(err);
+      throw fail('session', 'the model could not start on this device');
     }
     return { threads: ort.env.wasm.numThreads, version: ort.env.versions.web };
   },
@@ -73,7 +74,8 @@ var handlers = {
     try {
       out = await session.run({ image: input });
     } catch (err) {
-      throw fail('run', err);
+      console.warn(err);
+      throw fail('run', 'the model stopped before finishing, which can mean this device ran out of memory');
     }
     var ms = performance.now() - started;
     var probs = new Float32Array(out.probability.data);
