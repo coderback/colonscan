@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ColonoScan Polyp Segmentation</title>
+<meta name="description" content="Saved results from ColonoScan's trained polyp segmentation model on public Kvasir-SEG images. Research demo, not for clinical use.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b2a2d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%232dd4c6' stroke-width='3'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%232dd4c6'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<p class="disclaimer" role="note"><strong>Research demo, not for clinical use.</strong> Public dataset images only. Results are saved, not computed live.</p>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="brand"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b2a2d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%232dd4c6' stroke-width='3'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%232dd4c6'/%3E%3C/svg%3E" alt="" width="32" height="32"> ColonoScan</p>
+    <h1>Finding polyps in colonoscopy images, pixel by pixel</h1>
+    <p class="lede">ColonoScan is a university project: a platform for analysing colonoscopy video and histopathology slides with deep learning. This page shows the trained polyp segmentation model's real output on public images.</p>
+    <p class="links"><a class="btn" href="https://github.com/coderback/colonscan">View the code on GitHub</a> <a class="text-link" href="#viewer">See the results</a></p>
+  </div>
+</header>
+
+<main class="wrap">
+  <section id="viewer" aria-labelledby="viewer-title">
+    <h2 id="viewer-title">Model output on eight public images</h2>
+    <p class="sub">Saved results: the repo's weights ran on CPU over each image once, and this page replays what they produced. Choose an image, then compare the model with the expert annotation.</p>
+
+    <div class="viewer">
+      <figure class="stage" id="stage">
+        <img id="img-base" alt="" width="640" height="508">
+        <img id="img-pred" class="layer" alt="" width="640" height="508">
+        <img id="img-truth" class="layer" alt="" width="640" height="508">
+      </figure>
+      <div class="panel">
+        <fieldset class="toggles">
+          <legend>Show on the image</legend>
+          <label><input type="checkbox" id="t-pred" checked><span class="key key-pred" aria-hidden="true"></span> Model prediction</label>
+          <label><input type="checkbox" id="t-truth"><span class="key key-truth" aria-hidden="true"></span> Expert annotation</label>
+        </fieldset>
+        <dl class="scores" aria-live="polite">
+          <div><dt>IoU</dt><dd id="s-iou"></dd></div>
+          <div><dt>Dice</dt><dd id="s-dice"></dd></div>
+          <div><dt>Predicted polyp area</dt><dd id="s-area"></dd></div>
+        </dl>
+        <p class="fine">IoU and Dice compare this one prediction with the dataset's annotation at 256 by 256 pixels.</p>
+      </div>
+    </div>
+    <div class="thumbs" id="thumbs" role="group" aria-label="Choose a sample image"></div>
+    <p class="fine">These images were picked from the notebook's 20% validation split, reproduced from its random seed, and hand-picked to exclude any frame with text burned in. The eight-image scores are therefore not a fair estimate of accuracy. Use the table below for that.</p>
+  </section>
+
+  <section aria-labelledby="metrics-title">
+    <h2 id="metrics-title">How the model scored on whole datasets</h2>
+    <p class="sub">Saved evaluation from <code>Jupyter-Notebook/Colonoscopy/EfficientUnetPP Colonoscopy model.ipynb</code>. The model trained on Kvasir-SEG and CVC-ClinicDB. The drop on the other two datasets shows how much harder images from unseen sources are.</p>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Segmentation metrics">
+      <table>
+        <thead><tr><th scope="col">Dataset</th><th scope="col">Role</th><th scope="col">Images</th><th scope="col">IoU</th><th scope="col">Dice</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Kvasir-SEG + CVC-ClinicDB</th><td>Validation, also used for early stopping</td><td>323</td><td>0.8415</td><td>0.9000</td></tr>
+          <tr><th scope="row">CVC-ColonDB</th><td>External test</td><td>380</td><td>0.6648</td><td>0.7469</td></tr>
+          <tr><th scope="row">PolypGen</th><td>External test</td><td>1,537</td><td>0.4980</td><td>0.5900</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="histo-title">
+    <h2 id="histo-title">Histopathology patch classifier</h2>
+    <p class="sub">The second model, an EfficientNet-B3, labels colon tissue patches as normal or adenocarcinoma. It is not interactive here.</p>
+    <div class="card">
+      <p class="big">800 of 800</p>
+      <p>Test patches classified correctly in the saved run of <code>monai-efficientnet-cnn.ipynb</code> (390 normal, 410 adenocarcinoma), on the notebook's <code>lung_colon_image_set</code> data. A perfect score on one public patch dataset says little about real slides, and the model has not been tested on any other source.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="how-title">
+    <h2 id="how-title">How it works</h2>
+    <ol class="steps">
+      <li><strong>Prepare.</strong> Resize the frame to 256 by 256 and normalise it with ImageNet statistics.</li>
+      <li><strong>Segment.</strong> A UNet++ with an EfficientNet-b4 encoder outputs a probability for every pixel.</li>
+      <li><strong>Threshold.</strong> Pixels above 0.5 become the polyp mask, which is scaled back up over the frame.</li>
+    </ol>
+    <p class="sub">The full system in the repo adds a Next.js frontend, a Django REST backend with Celery and PostgreSQL, and FastAPI inference services, run with Docker Compose. Only the model is shown here.</p>
+    <p class="sub">On the demo image's 2 CPU cores, warm inference took about 1 to 4 seconds per image, using about 620 MB of memory. The service code is in <code>demo/api</code>, and it accepts no uploads.</p>
+  </section>
+
+  <footer class="foot">
+    <p><strong>Research demo, not for clinical use.</strong> Do not use this to make any medical decision.</p>
+    <p>Images and annotations: Kvasir-SEG, used for research and education under its terms. Jha D, Smedsrud PH, Riegler MA, Halvorsen P, de Lange T, Johansen D, Johansen HD. "Kvasir-SEG: A Segmented Polyp Dataset." MultiMedia Modeling, 2020. <a href="https://datasets.simula.no/kvasir-seg/">Dataset page</a></p>
+    <p><a href="https://github.com/coderback/colonscan">github.com/coderback/colonscan</a></p>
+  </footer>
+</main>
+<script src="results.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+[
+ {
+  "id": "kvasir-1",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju1dfeupuzlw0835gnxip369.jpg",
+  "width": 640,
+  "height": 508
+ },
+ {
+  "id": "kvasir-2",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju2txjfzv60w098839dcimys.jpg",
+  "width": 551,
+  "height": 430
+ },
+ {
+  "id": "kvasir-3",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju30ywtc0oar0835bp2en7ec.jpg",
+  "width": 640,
+  "height": 504
+ },
+ {
+  "id": "kvasir-4",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju2sxf3iqbpv09937iksn8ep.jpg",
+  "width": 622,
+  "height": 529
+ },
+ {
+  "id": "kvasir-5",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju84jdl9kv0i0871eog9b3i9.jpg",
+  "width": 640,
+  "height": 508
+ },
+ {
+  "id": "kvasir-6",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju7dizi82h2i0755doucgnt3.jpg",
+  "width": 622,
+  "height": 529
+ },
+ {
+  "id": "kvasir-7",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju5ufn3skquf0818dhapnhba.jpg",
+  "width": 570,
+  "height": 530
+ },
+ {
+  "id": "kvasir-8",
+  "dataset": "Kvasir-SEG",
+  "source_file": "cju7f5ghb2r5s0801chwkxxh9.jpg",
+  "width": 640,
+  "height": 530
+ }
+]
