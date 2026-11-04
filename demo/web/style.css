@@ -91,3 +91,10 @@ td:nth-child(n+3),thead th:nth-child(n+3){text-align:right;font-variant-numeric:
   .thumbs{grid-template-columns:repeat(4,minmax(0,1fr))}
   .steps{grid-template-columns:minmax(0,1fr)}
 }
+
+#histo .viewer{margin-bottom:16px}
+#histo .scores{grid-template-columns:minmax(0,1fr)}
+#histo .scores div:last-child{grid-column:auto}
+#histo .scores dd{font-size:1.2rem;overflow-wrap:anywhere}
+#histo .live .scores{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){#histo .live .scores{grid-template-columns:minmax(0,1fr)}}

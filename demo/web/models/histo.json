@@ -1,0 +1,8 @@
+{
+ "file": "efficientnet_b3.float16.bc1bb898.onnx",
+ "bytes": 21595019,
+ "sha256": "bc1bb8988c51d4c570dff278c30d4434c998d3dd325ea01c1cd886b914a77881",
+ "format": "float16",
+ "release": "demo-model-bc1bb898",
+ "weights_commit": "1b96eec1444fcf26b49209b1c950c38eb7577ca6"
+}

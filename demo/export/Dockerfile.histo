@@ -1,0 +1,11 @@
+FROM python:3.12-slim
+
+ENV PIP_NO_CACHE_DIR=1 PYTHONUNBUFFERED=1
+
+RUN pip install torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cpu \
+ && pip install monai==1.4.0 captum==0.8.0 "numpy<2" opencv-python-headless==4.11.0.86 pillow==11.2.1 \
+      scikit-learn==1.6.1 pandas==2.2.3 pyarrow==20.0.0 onnx==1.18.0 onnxruntime==1.22.0
+
+COPY export_histo.py /app/export_histo.py
+WORKDIR /app
+ENTRYPOINT ["python", "/app/export_histo.py"]

@@ -1,6 +1,6 @@
 # Browser model export
 
-Builds the ONNX file that the demo page runs in the visitor's browser. The file is 40 MB, so it stays out of git (`demo/web/.gitignore`) and is uploaded with the site instead. Run this before deploying from a fresh clone, or the live control will report that it can't find the model.
+Builds the ONNX files that the demo page runs in the visitor's browser. They are too large for git (`demo/web/.gitignore`), so each one is published as a GitHub release, and `demo/fetch-model.sh` downloads it at build time and checks its SHA-256. To change a model, publish a new release and update `release` in its JSON file in `demo/web/models`. The histopathology classifier has its own export, described at the end.
 
 From the repo root, with Docker running:
 
@@ -39,3 +39,21 @@ The int8 version clears 0.99 on the samples but not on the transformed inputs, s
 ## Preprocessing in the browser
 
 A canvas resize uses a different filter from OpenCV, so `demo/web/live.js` does the resize itself, using the same fixed-point arithmetic as `cv2.resize` with `INTER_LINEAR`. In Chromium, Firefox and WebKit builds, the resized pixels matched `cv2` exactly on all eight samples.
+
+## Histopathology classifier
+
+From the repo root, with Docker running:
+
+```sh
+docker build -t colonoscan-histo -f demo/export/Dockerfile.histo demo/export
+docker run --rm -v "$PWD/demo:/demo" -v "$PWD/.export-cache/histo:/work/cache" colonoscan-histo
+```
+
+It downloads about 1.1 GB of LC25000 from Hugging Face and the weights from a pinned commit. It repeats the two splits in `monai-efficientnet-cnn.ipynb` from the file names, and stops if the test split does not have the 390 benign and 410 adenocarcinoma patches the notebook reports. It then scores those 800 patches in PyTorch and in float16 ONNX, and stops if the two disagree on any label. It writes:
+
+- `demo/web/models/efficientnet_b3.float16.<hash>.onnx`, the served model
+- `demo/web/models/histo.json`, its size, SHA-256 and release
+- `demo/web/samples/histo-*`, eight test patches, each with the 224 pixel input and a saved Grad-CAM overlay
+- `demo/web/histo-results.js`, their saved results and the test scores
+
+The page reads the 224 pixel PNG, so its input matches the PIL resize in PyTorch with no browser resize involved.
