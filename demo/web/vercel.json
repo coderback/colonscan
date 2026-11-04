@@ -1,4 +1,6 @@
 {
+  "buildCommand": "bash ../fetch-model.sh",
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*)",

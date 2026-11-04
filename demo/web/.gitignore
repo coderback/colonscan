@@ -2,5 +2,5 @@
 
 .vercel
 .env*
-# Too large for git. demo/export reproduces it, and it is deployed with the site.
+# Too large for git. demo/export reproduces it, and demo/fetch-model.sh downloads it at build time.
 models/*.onnx
