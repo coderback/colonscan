@@ -233,6 +233,7 @@
   });
 
   $('h-total').textContent = summary.test_correct + ' of ' + summary.test_total;
+  if ($('h-total-copy')) $('h-total-copy').textContent = summary.test_correct + ' of ' + summary.test_total;
   pick(0);
   fetch('models/histo.json').then(function (res) { return res.json(); }).then(function (json) {
     info = json;

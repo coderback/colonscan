@@ -5,157 +5,176 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ColonoScan Model Demo</title>
 <meta name="description" content="ColonoScan's trained models on public images: polyp segmentation on Kvasir-SEG and histopathology patch classification on LC25000, with saved results and an optional live run on your own device. Research demo, not for clinical use.">
-<meta name="color-scheme" content="light dark">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b2a2d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%232dd4c6' stroke-width='3'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%232dd4c6'/%3E%3C/svg%3E">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#ffffff">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230e6e6b'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%23ffffff' stroke-width='3'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%23ffffff'/%3E%3C/svg%3E">
+<link rel="preload" href="fonts/plus-jakarta-sans-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<p class="disclaimer" role="note"><strong>Research demo, not for clinical use.</strong> Public dataset images only. Results are saved unless you choose to run the model live, which happens on your device.</p>
+<a class="skip" href="#viewer">Skip to the polyp model</a>
+<p class="disclaimer" role="note"><strong>Research demo, not for clinical use.</strong> Public dataset images only. Live runs happen on your device.</p>
 
-<header class="hero">
-  <div class="wrap">
-    <p class="brand"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b2a2d'/%3E%3Ccircle cx='16' cy='16' r='9' fill='none' stroke='%232dd4c6' stroke-width='3'/%3E%3Ccircle cx='19' cy='13' r='3' fill='%232dd4c6'/%3E%3C/svg%3E" alt="" width="32" height="32"> ColonoScan</p>
-    <h1>Polyp segmentation and tissue classification with deep learning</h1>
-    <p class="lede">ColonoScan is a university project: a platform for analysing colonoscopy video and histopathology slides with deep learning. This page shows both trained models' real output on public images, and lets you run them on those images in your own browser.</p>
-    <p class="links"><a class="btn" href="https://github.com/coderback/colonscan">View the code on GitHub</a> <a class="text-link" href="#viewer">Polyp segmentation</a> <a class="text-link" href="#histo">Histopathology</a></p>
+<header class="top">
+  <div class="wrap top-row">
+    <p class="brand"><svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true"><circle cx="13" cy="13" r="10" fill="none" stroke="currentColor" stroke-width="3"/><circle cx="16" cy="10" r="3" fill="currentColor"/></svg>ColonoScan</p>
+    <nav aria-label="Sections"><a href="#viewer">Polyp segmentation</a><a href="#histo">Tissue classification</a><a href="#datasets">Whole-dataset scores</a><a href="#how">How it works</a></nav>
+    <a class="gh" href="https://github.com/coderback/colonscan"><span class="hide-s">Source on&nbsp;</span>GitHub</a>
   </div>
 </header>
 
-<main class="wrap">
-  <section id="viewer" aria-labelledby="viewer-title">
-    <h2 id="viewer-title">Model output on eight public images</h2>
-    <p class="sub">Saved results appear first: the repo's weights ran on CPU over each image once, and this page replays what they produced. You can also run the model yourself, live on your own device. Choose an image, then compare the model with the expert annotation.</p>
+<main>
+<section class="hero" aria-labelledby="hero-h">
+  <div class="wrap">
+    <div class="hero-head">
+      <h1 id="hero-h">Two deep learning models for colon cancer, running in your browser.</h1>
+      <p class="lede">A university project for colonoscopy video and histopathology slides. Pick a public image, compare the model with the expert, then run it yourself. Nothing is uploaded.</p>
+    </div>
+    <p class="prov"><span class="chip">Saved + live</span> <span>Scores shown first are saved from the repo's weights, run once on CPU. “Run live” repeats the model with WebAssembly on your device; no server does any inference. <a href="#how">How this page works</a></span></p>
 
-    <div class="viewer">
-      <div class="viewer-main">
+    <div class="cards">
+      <article id="viewer" class="mcard" aria-labelledby="viewer-title">
         <figure class="stage" id="stage">
           <img id="img-base" alt="" width="640" height="508">
           <img id="img-pred" class="layer" alt="" width="640" height="508">
           <canvas id="live-layer" class="layer" role="img" aria-label="Live model prediction, computed on your device" hidden></canvas>
           <img id="img-truth" class="layer" alt="" width="640" height="508">
+          <figcaption class="badge">Kvasir-SEG · public image</figcaption>
         </figure>
         <div class="thumbs" id="thumbs" role="group" aria-label="Choose a sample image"></div>
-        <div class="live" id="live">
-          <h3 id="live-title">Run the model live in your browser</h3>
-          <p class="fine">Your device runs the model on the image above, using WebAssembly. The first run downloads about 41 MB. No image or result is sent to a server, and it only runs on these eight public images, so there is no upload.</p>
-          <div class="live-actions">
-            <button type="button" id="live-run" class="btn-live">Run on this image (about 41 MB download)</button>
-            <button type="button" id="live-cancel" class="btn-quiet" hidden>Cancel</button>
-          </div>
-          <progress id="live-progress" aria-labelledby="live-title" hidden></progress>
-          <p id="live-status" class="live-status" role="status"></p>
-          <dl class="scores" id="live-scores" aria-label="Live result from this device" hidden>
-            <div><dt>IoU, live</dt><dd id="l-iou"></dd></div>
-            <div><dt>Dice, live</dt><dd id="l-dice"></dd></div>
-            <div><dt>Predicted area, live</dt><dd id="l-area"></dd></div>
-            <div><dt>Inference time</dt><dd id="l-ms"></dd></div>
+        <div class="mbody">
+          <div class="mhead"><h2 id="viewer-title">Polyp segmentation</h2><p class="tag">UNet++ · EfficientNet-B4</p></div>
+          <dl class="scores" aria-live="polite">
+            <div><dt>IoU with the expert mask, saved</dt><dd id="s-iou"></dd></div>
+            <div><dt>Dice, saved</dt><dd id="s-dice"></dd></div>
+            <div><dt>Predicted polyp area, saved</dt><dd id="s-area"></dd></div>
           </dl>
-          <p class="fine" id="live-detail" hidden></p>
-          <p class="fine">The live model has the same trained weights, stored as 16-bit floats to cut the file from 80 MB to 40 MB. Against the original PyTorch model on these eight images, its masks had an IoU of at least 0.999, with at most 8 of 65,536 pixels different, so a live score can differ from the saved one in the third decimal place.</p>
+          <fieldset class="toggles">
+            <legend>Show on the image</legend>
+            <label><input type="checkbox" id="t-pred" checked><span class="key key-pred" aria-hidden="true"></span> Saved prediction</label>
+            <label id="t-live-row" hidden><input type="checkbox" id="t-live"><span class="key key-live" aria-hidden="true"></span> Live prediction</label>
+            <label><input type="checkbox" id="t-truth"><span class="key key-truth" aria-hidden="true"></span> Expert mask</label>
+          </fieldset>
+          <div class="live" id="live">
+            <h3 id="live-title" class="sr">Run the model live in your browser</h3>
+            <div class="live-actions">
+              <button type="button" id="live-run" class="btn-live">Run on this image (about 41 MB download)</button>
+              <button type="button" id="live-cancel" class="btn-quiet" hidden>Cancel</button>
+            </div>
+            <progress id="live-progress" aria-labelledby="live-title" hidden></progress>
+            <p id="live-status" class="live-status" role="status"></p>
+            <dl class="scores live-scores" id="live-scores" aria-label="Live result from this device" hidden>
+              <div><dt>IoU, live</dt><dd id="l-iou"></dd></div>
+              <div><dt>Dice, live</dt><dd id="l-dice"></dd></div>
+              <div><dt>Predicted area, live</dt><dd id="l-area"></dd></div>
+              <div><dt>Inference time</dt><dd id="l-ms"></dd></div>
+            </dl>
+            <p class="fine" id="live-detail" hidden></p>
+            <p class="fine">Your device runs the model on the image above, using WebAssembly. The first run downloads about 41 MB. No image or result is sent to a server, and it only runs on these eight public images, so there is no upload.</p>
+            <p class="fine">IoU and Dice compare this one prediction with the dataset's annotation at 256 by 256 pixels. The live model has the same trained weights, stored as 16-bit floats to cut the file from 80 MB to 40 MB. Against the original PyTorch model on these eight images, its masks had an IoU of at least 0.999, with at most 8 of 65,536 pixels different, so a live score can differ from the saved one in the third decimal place.</p>
+          </div>
         </div>
-      </div>
-      <div class="panel">
-        <fieldset class="toggles">
-          <legend>Show on the image</legend>
-          <label><input type="checkbox" id="t-pred" checked><span class="key key-pred" aria-hidden="true"></span> Saved model prediction</label>
-          <label id="t-live-row" hidden><input type="checkbox" id="t-live"><span class="key key-live" aria-hidden="true"></span> Live prediction, from your device</label>
-          <label><input type="checkbox" id="t-truth"><span class="key key-truth" aria-hidden="true"></span> Expert annotation</label>
-        </fieldset>
-        <dl class="scores" aria-live="polite">
-          <div><dt>IoU, saved</dt><dd id="s-iou"></dd></div>
-          <div><dt>Dice, saved</dt><dd id="s-dice"></dd></div>
-          <div><dt>Predicted polyp area, saved</dt><dd id="s-area"></dd></div>
-        </dl>
-        <p class="fine">IoU and Dice compare this one prediction with the dataset's annotation at 256 by 256 pixels.</p>
-      </div>
-    </div>
-    <p class="fine">These images were picked from the notebook's 20% validation split, reproduced from its random seed, and hand-picked to exclude any frame with text burned in. The eight-image scores are therefore not a fair estimate of accuracy. Use the table below for that.</p>
-  </section>
+      </article>
 
-  <section aria-labelledby="metrics-title">
-    <h2 id="metrics-title">How the model scored on whole datasets</h2>
-    <p class="sub">Saved evaluation from <code>Jupyter-Notebook/Colonoscopy/EfficientUnetPP Colonoscopy model.ipynb</code>. The model trained on Kvasir-SEG and CVC-ClinicDB. The drop on the other two datasets shows how much harder images from unseen sources are.</p>
-    <div class="table-wrap" tabindex="0" role="region" aria-label="Segmentation metrics">
-      <table>
-        <thead><tr><th scope="col">Dataset</th><th scope="col">Role</th><th scope="col">Images</th><th scope="col">IoU</th><th scope="col">Dice</th></tr></thead>
-        <tbody>
-          <tr><th scope="row">Kvasir-SEG + CVC-ClinicDB</th><td>Validation, also used for early stopping</td><td>323</td><td>0.8415</td><td>0.9000</td></tr>
-          <tr><th scope="row">CVC-ColonDB</th><td>External test</td><td>380</td><td>0.6648</td><td>0.7469</td></tr>
-          <tr><th scope="row">PolypGen</th><td>External test</td><td>1,537</td><td>0.4980</td><td>0.5900</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
-
-  <section id="histo" aria-labelledby="histo-title">
-    <h2 id="histo-title">Histopathology patch classifier</h2>
-    <p class="sub">The second model, an EfficientNet-B3, labels colon tissue patches as benign or adenocarcinoma. These eight patches, four of each, come from the notebook's test split of the public LC25000 dataset. Choose one, compare the saved result with the dataset's label, then run the model yourself.</p>
-
-    <div class="viewer">
-      <div class="viewer-main">
-        <figure class="stage">
+      <article id="histo" class="mcard" aria-labelledby="histo-title">
+        <figure class="stage stage-patch">
           <img id="h-base" alt="" width="768" height="768">
           <img id="h-cam" class="layer" alt="Saved Grad-CAM heatmap over the patch, showing the areas that most raised the score for the predicted class" width="224" height="224" hidden>
+          <figcaption class="badge">LC25000 · test patch</figcaption>
         </figure>
         <div class="thumbs" id="h-thumbs" role="group" aria-label="Choose a tissue patch"></div>
-        <div class="live" id="h-live">
-          <h3 id="h-live-title">Run the classifier live in your browser</h3>
-          <p class="fine">Your device runs the model on the patch above, using WebAssembly. No image or result is sent to a server, and it only runs on these eight public patches, so there is no upload.</p>
-          <div class="live-actions">
-            <button type="button" id="h-run" class="btn-live">Run on this patch</button>
-            <button type="button" id="h-cancel" class="btn-quiet" hidden>Cancel</button>
-          </div>
-          <progress id="h-progress" aria-labelledby="h-live-title" hidden></progress>
-          <p id="h-status" class="live-status" role="status"></p>
-          <dl class="scores" id="h-live-scores" aria-label="Live result from this device" hidden>
-            <div><dt>Prediction, live</dt><dd id="h-l-label"></dd></div>
-            <div><dt>Model confidence, live</dt><dd id="h-l-conf"></dd></div>
-            <div><dt>Inference time</dt><dd id="h-l-ms"></dd></div>
+        <div class="mbody">
+          <div class="mhead"><h2 id="histo-title">Tissue classification</h2><p class="tag">EfficientNet-B3</p></div>
+          <dl class="scores h-scores">
+            <div><dt>Dataset label</dt><dd id="h-truth"></dd></div>
+            <div><dt>Prediction, saved</dt><dd id="h-s-label"></dd></div>
+            <div><dt>Model confidence, saved</dt><dd id="h-s-conf"></dd></div>
+            <div><dt>Test patches correct</dt><dd id="h-total">800 of 800</dd></div>
           </dl>
-          <p class="fine" id="h-live-detail" hidden></p>
+          <fieldset class="toggles">
+            <legend>Show on the patch</legend>
+            <label><input type="checkbox" id="h-show-cam"> Saved Grad-CAM heatmap</label>
+          </fieldset>
+          <div class="live" id="h-live">
+            <h3 id="h-live-title" class="sr">Run the classifier live in your browser</h3>
+            <div class="live-actions">
+              <button type="button" id="h-run" class="btn-live">Run on this patch</button>
+              <button type="button" id="h-cancel" class="btn-quiet" hidden>Cancel</button>
+            </div>
+            <progress id="h-progress" aria-labelledby="h-live-title" hidden></progress>
+            <p id="h-status" class="live-status" role="status"></p>
+            <dl class="scores live-scores" id="h-live-scores" aria-label="Live result from this device" hidden>
+              <div><dt>Prediction, live</dt><dd id="h-l-label"></dd></div>
+              <div><dt>Model confidence, live</dt><dd id="h-l-conf"></dd></div>
+              <div><dt>Inference time</dt><dd id="h-l-ms"></dd></div>
+            </dl>
+            <p class="fine" id="h-live-detail" hidden></p>
+            <p class="fine">Your device runs the model on the patch above, using WebAssembly. No image or result is sent to a server, and it only runs on these eight public patches, so there is no upload.</p>
+            <p class="fine">These eight patches, four of each class, come from the notebook's test split of the public LC25000 dataset. Grad-CAM shows where the model's score responded most. It is not a tumour outline, and no expert marked these areas.</p>
+          </div>
         </div>
-      </div>
-      <div class="panel">
-        <fieldset class="toggles">
-          <legend>Show on the patch</legend>
-          <label><input type="checkbox" id="h-show-cam"> Saved Grad-CAM heatmap</label>
-        </fieldset>
-        <dl class="scores">
-          <div><dt>Dataset label</dt><dd id="h-truth"></dd></div>
-          <div><dt>Prediction, saved</dt><dd id="h-s-label"></dd></div>
-          <div><dt>Model confidence, saved</dt><dd id="h-s-conf"></dd></div>
-        </dl>
-        <p class="fine">Grad-CAM shows where the model's score responded most. It is not a tumour outline, and no expert marked these areas.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section id="datasets" class="band" aria-labelledby="metrics-title">
+  <div class="wrap split">
+    <div class="split-text">
+      <h2 id="metrics-title">The honest numbers</h2>
+      <p>The polyp samples above were picked from the notebook's 20% validation split, reproduced from its random seed, and hand-picked to exclude any frame with text burned in, so their scores are not a fair estimate of accuracy. The table shows the polyp model's scores on whole datasets. It trained on Kvasir-SEG and CVC-ClinicDB, and the drop on the other two shows how much harder images from unseen sources are.</p>
+      <p>Saved evaluation from <code>Jupyter-Notebook/Colonoscopy/EfficientUnetPP Colonoscopy model.ipynb</code>.</p>
+    </div>
+    <div class="split-fig">
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Segmentation metrics">
+        <table>
+          <thead><tr><th scope="col">Dataset</th><th scope="col">Images</th><th scope="col">IoU</th><th scope="col">Dice</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Kvasir-SEG + CVC-ClinicDB<span class="role">Validation, also used for early stopping</span></th><td>323</td><td>0.8415</td><td>0.9000</td></tr>
+            <tr><th scope="row">CVC-ColonDB<span class="role">External test</span></th><td>380</td><td>0.6648</td><td>0.7469</td></tr>
+            <tr><th scope="row">PolypGen<span class="role">External test</span></th><td>1,537</td><td>0.4980</td><td>0.5900</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-
-    <div class="card">
-      <p class="big" id="h-total">800 of 800</p>
-      <p>Test patches classified correctly (390 benign, 410 adenocarcinoma), in the saved run of <code>monai-efficientnet-cnn.ipynb</code> and again when <code>demo/export</code> rebuilt that split and re-ran the repo's weights. The 21.6 MB live model stores those weights as 16-bit floats, and it gave the same label as PyTorch on all 800.</p>
+  </div>
+  <div class="wrap">
+    <div class="caveat">
+      <p class="caveat-big"><span id="h-total-copy">800 of 800</span> tissue test patches classified correctly</p>
+      <p>390 benign and 410 adenocarcinoma, in the saved run of <code>monai-efficientnet-cnn.ipynb</code> and again when <code>demo/export</code> rebuilt that split and re-ran the repo's weights. The 21.6 MB live model stores those weights as 16-bit floats, and it gave the same label as PyTorch on all 800.</p>
       <p><strong>Why this score flatters the model.</strong> LC25000's 10,000 colon images are rotated and flipped versions of just 500 originals, and the notebook splits them at random, so test patches can be near copies of training ones. Confidence near 100% on these patches is expected and does not mean the model would do this on real slides. It has not been tested on any other source.</p>
     </div>
-  </section>
+  </div>
+</section>
 
-  <section aria-labelledby="how-title">
+<section id="how" class="band band-tint" aria-labelledby="how-title">
+  <div class="wrap">
     <h2 id="how-title">How it works</h2>
     <ol class="steps">
       <li><strong>Prepare.</strong> Resize the frame to 256 by 256 and normalise it with ImageNet statistics.</li>
       <li><strong>Segment.</strong> A UNet++ with an EfficientNet-b4 encoder outputs a probability for every pixel.</li>
       <li><strong>Threshold.</strong> Pixels above 0.5 become the polyp mask, which is scaled back up over the frame.</li>
     </ol>
-    <p class="sub">The patch classifier resizes each patch to 224 by 224, normalises it the same way, and outputs a probability for each class.</p>
-    <p class="sub">The full system in the repo adds a Next.js frontend, a Django REST backend with Celery and PostgreSQL, and FastAPI inference services, run with Docker Compose. Its histopathology service also has a whole-slide route, which this page doesn't run. Only the two models are shown here.</p>
-    <p class="sub"><strong>Saved results</strong> came from the PyTorch service in <code>demo/api</code>, in a local container limited to 2 CPU cores, where warm inference took about 1 to 4 seconds per image and used about 620 MB of memory. That service accepts no uploads and is not deployed.</p>
-    <p class="sub"><strong>Live runs</strong> use the same weights exported to ONNX, and onnxruntime-web 1.30.0 served from this site. The page repeats the same steps in your browser, and no server does any inference. <code>demo/export</code> reproduces both model files and their comparisons with PyTorch.</p>
-  </section>
-
-  <footer class="foot">
-    <p><strong>Research demo, not for clinical use.</strong> Do not use this to make any medical decision.</p>
-    <p>Images and annotations: Kvasir-SEG, used for research and education under its terms. Jha D, Smedsrud PH, Riegler MA, Halvorsen P, de Lange T, Johansen D, Johansen HD. "Kvasir-SEG: A Segmented Polyp Dataset." MultiMedia Modeling, 2020. <a href="https://datasets.simula.no/kvasir-seg/">Dataset page</a></p>
-    <p>Tissue patches: LC25000, de-identified and freely available for AI research. Borkowski AA, Bui MM, Thomas LB, Wilson CP, DeLand LA, Mastorides SM. "Lung and Colon Cancer Histopathological Image Dataset (LC25000)." arXiv:1912.12142, 2019. <a href="https://github.com/tampapath/lung_colon_image_set">Dataset page</a></p>
-    <p><a href="https://github.com/coderback/colonscan">github.com/coderback/colonscan</a></p>
-  </footer>
+    <div class="prose">
+      <p>The patch classifier resizes each patch to 224 by 224, normalises it the same way, and outputs a probability for each class.</p>
+      <p>The full system in the repo adds a Next.js frontend, a Django REST backend with Celery and PostgreSQL, and FastAPI inference services, run with Docker Compose. Its histopathology service also has a whole-slide route, which this page doesn't run. Only the two models are shown here.</p>
+      <p><strong>Saved results</strong> came from the PyTorch service in <code>demo/api</code>, in a local container limited to 2 CPU cores, where warm inference took about 1 to 4 seconds per image and used about 620 MB of memory. That service accepts no uploads and is not deployed.</p>
+      <p><strong>Live runs</strong> use the same weights exported to ONNX, and onnxruntime-web 1.30.0 served from this site. The page repeats the same steps in your browser, and no server does any inference. <code>demo/export</code> reproduces both model files and their comparisons with PyTorch.</p>
+    </div>
+  </div>
+</section>
 </main>
+
+<footer class="foot" id="credits">
+  <div class="wrap">
+    <div class="foot-row">
+      <p>Built by Timothy Ojebiyi as a portfolio demo. <strong>Research demo, not for clinical use.</strong> Do not use this to make any medical decision.</p>
+      <p class="foot-links"><a href="https://timothyojebiyi.com">Portfolio</a><a href="https://github.com/coderback/colonscan">Source on GitHub</a><a href="#how">How this page works</a></p>
+    </div>
+    <p class="credit">Images and annotations: Kvasir-SEG, used for research and education under its terms. Jha D, Smedsrud PH, Riegler MA, Halvorsen P, de Lange T, Johansen D, Johansen HD. "Kvasir-SEG: A Segmented Polyp Dataset." MultiMedia Modeling, 2020. <a href="https://datasets.simula.no/kvasir-seg/">Dataset page</a></p>
+    <p class="credit">Tissue patches: LC25000, de-identified and freely available for AI research. Borkowski AA, Bui MM, Thomas LB, Wilson CP, DeLand LA, Mastorides SM. "Lung and Colon Cancer Histopathological Image Dataset (LC25000)." arXiv:1912.12142, 2019. <a href="https://github.com/tampapath/lung_colon_image_set">Dataset page</a></p>
+  </div>
+</footer>
 <script src="results.js"></script>
 <script src="app.js"></script>
 <script src="live.js"></script>
